@@ -70,6 +70,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Allow src/lib directory
+!src/lib/
+
 # Virtual Environment
 venv/
 ENV/

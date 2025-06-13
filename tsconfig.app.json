@@ -7,14 +7,14 @@
     "skipLibCheck": true,
 
     /* Bundler mode */
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+    /* Type Checking */
     "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -23,12 +23,16 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
 
+    /* Paths */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["vite/client", "node"]
+
+    /* Type Definitions */
+    "types": ["node", "vite/client"],
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src", "vite.config.ts"],
+  "include": ["src", "src/types", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]
 }
