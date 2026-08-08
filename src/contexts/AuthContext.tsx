@@ -16,7 +16,8 @@ interface AuthContextType {
   session: Session | null;
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: RegisterData) => Promise<boolean>;
+  /** true = signed in, 'confirm' = must confirm email first, false = failed */
+  register: (userData: RegisterData) => Promise<boolean | 'confirm'>;
   logout: () => void;
   loading: boolean;
 }
@@ -82,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  const register = async (userData: RegisterData): Promise<boolean> => {
+  const register = async (userData: RegisterData): Promise<boolean | 'confirm'> => {
     setLoading(true);
 
     const { data, error } = await supabase.auth.signUp({
@@ -104,8 +105,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    // Create the public.users profile row immediately after auth signup
-    if (data.user) {
+    // Create the public.users profile row. This only succeeds when sign-up
+    // returned a session (i.e. email confirmation is disabled) — otherwise the
+    // request is unauthenticated and row level security rejects it. The
+    // reliable path is the on_auth_user_created trigger in
+    // scripts/fix-signup-profile.sql; this is a best-effort fallback for
+    // projects that auto-confirm.
+    if (data.user && data.session) {
       const { error: profileError } = await supabase.from('users').insert({
         id: data.user.id,
         email: userData.email,
@@ -121,6 +127,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setLoading(false);
+
+    // No session means the address must be confirmed before signing in. Saying
+    // "Welcome" and dropping them on the homepage signed-out would be a lie.
+    if (!data.session) {
+      toast({
+        title: 'Confirm your email',
+        description: `We sent a confirmation link to ${userData.email}. Click it to activate your account, then sign in.`,
+      });
+      return 'confirm';
+    }
+
     toast({ title: 'Registration successful!', description: 'Welcome to VMK Store' });
     return true;
   };

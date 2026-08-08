@@ -51,8 +51,12 @@ const Register = () => {
 
     console.log('Registration attempt:', formData);
     
-    const success = await register(formData);
-    if (success) {
+    const result = await register(formData);
+    if (result === 'confirm') {
+      // Account exists but is not usable until the email is confirmed, so send
+      // them to sign-in rather than a homepage that still shows them logged out.
+      navigate('/login');
+    } else if (result) {
       navigate('/');
     }
   };
