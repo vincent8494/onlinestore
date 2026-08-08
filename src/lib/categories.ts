@@ -27,7 +27,7 @@ export interface CategoryDef {
   description: string;
   icon: LucideIcon;
   hue: Hue;
-  /** Only a few have photography; the rest fall back to their hue field. */
+  /** Falls back to the hue colour field when absent (currently Automotive). */
   image?: string;
 }
 
@@ -54,6 +54,7 @@ export const CATEGORIES: CategoryDef[] = [
     description: 'Furniture, decor and garden supplies',
     icon: Home,
     hue: 'orange',
+    image: '/images/categories/home-garden.jpg',
   },
   {
     name: 'Grocery',
@@ -61,6 +62,7 @@ export const CATEGORIES: CategoryDef[] = [
     description: 'Fresh food, pantry staples and essentials',
     icon: ShoppingBasket,
     hue: 'lime',
+    image: '/images/categories/grocery.jpg',
   },
   {
     name: 'Beauty & Personal Care',
@@ -68,6 +70,7 @@ export const CATEGORIES: CategoryDef[] = [
     description: 'Skincare, haircare and grooming',
     icon: Sparkles,
     hue: 'pink',
+    image: '/images/categories/beauty-personal-care.jpg',
   },
   {
     name: 'Sports & Outdoors',
@@ -75,6 +78,7 @@ export const CATEGORIES: CategoryDef[] = [
     description: 'Equipment, gear and outdoor activities',
     icon: Dumbbell,
     hue: 'cyan',
+    image: '/images/categories/sports-outdoors.jpg',
   },
   {
     name: 'Books & Media',
@@ -82,6 +86,7 @@ export const CATEGORIES: CategoryDef[] = [
     description: 'Books, movies, music and games',
     icon: BookOpen,
     hue: 'indigo',
+    image: '/images/categories/books-media.jpg',
   },
   {
     name: 'Automotive',
