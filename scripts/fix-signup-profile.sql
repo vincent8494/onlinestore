@@ -18,12 +18,27 @@
 -- auth.users, which runs with definer rights and is not subject to RLS.
 -- Run this in the Supabase SQL editor.
 
+-- schema.sql notes that no trigger was used here in order to "avoid 500 errors
+-- from server-side trigger failures". That concern is real: anything this
+-- function raises propagates into the auth signup transaction and the user
+-- gets a 500 instead of an account. Two guards address it:
+--
+--   1. account_type is validated against the allowed values before casting.
+--      A bare (… ->> 'account_type')::account_type_enum raises 22P02 on any
+--      unexpected string, which would break signup for everyone.
+--   2. the whole body is wrapped so that if anything else goes wrong the
+--      exception is swallowed and signup still succeeds. A missing profile row
+--      is recoverable — the backfill at the bottom re-runs safely — whereas a
+--      failed signup is not.
+
 create or replace function public.handle_new_auth_user()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  meta_account_type text := new.raw_user_meta_data ->> 'account_type';
 begin
   insert into public.users (id, email, first_name, last_name, phone, account_type)
   values (
@@ -32,10 +47,11 @@ begin
     coalesce(new.raw_user_meta_data ->> 'first_name', ''),
     coalesce(new.raw_user_meta_data ->> 'last_name', ''),
     nullif(new.raw_user_meta_data ->> 'phone', ''),
-    coalesce(
-      (new.raw_user_meta_data ->> 'account_type')::account_type_enum,
-      'buyer'::account_type_enum
-    )
+    case
+      when meta_account_type in ('buyer', 'seller')
+        then meta_account_type::account_type_enum
+      else 'buyer'::account_type_enum
+    end
   )
   on conflict (id) do nothing;
 
@@ -46,6 +62,11 @@ begin
   on conflict (user_id) do nothing;
 
   return new;
+exception
+  when others then
+    -- Never block account creation because the profile row failed.
+    raise warning 'handle_new_auth_user failed for %: %', new.id, sqlerrm;
+    return new;
 end;
 $$;
 
