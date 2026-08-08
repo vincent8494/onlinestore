@@ -58,6 +58,7 @@ const ImportProducts = () => {
   const [importing, setImporting] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [imported, setImported] = useState<number | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Categories and the seller's existing product names — both are needed
   // before a sheet can be judged, so the upload stays disabled until they land.
@@ -165,6 +166,7 @@ const ImportProducts = () => {
     if (ready.length === 0) return;
 
     setImporting(true);
+    setImportError(null);
     try {
       const payload = ready.map(r => ({
         seller_id: user.id,
@@ -246,11 +248,29 @@ const ImportProducts = () => {
         description: 'They are now listed on your storefront.',
       });
     } catch (err) {
-      toast({
-        title: 'Import failed',
-        description: err instanceof Error ? err.message : 'Nothing was imported.',
-        variant: 'destructive',
-      });
+      // Supabase rejects with a PostgrestError object, not an Error instance,
+      // so `err instanceof Error` was false and the real cause was replaced by
+      // the fallback string. Read the shape properly and translate the codes a
+      // seller can actually act on.
+      const e = err as { message?: string; details?: string; hint?: string; code?: string };
+      const raw = [e.message, e.details, e.hint].filter(Boolean).join(' — ');
+
+      let description = raw || 'Nothing was imported.';
+      if (e.code === '42P10') {
+        description =
+          'The SKU index is partial and cannot be matched. Run scripts/fix-sku-index.sql in Supabase, then try again.';
+      } else if (e.code === '23503') {
+        description =
+          'Your account has no profile row yet, so products cannot be linked to you. Run scripts/fix-signup-profile.sql in Supabase — it includes a backfill for existing accounts.';
+      } else if (e.code === '42703') {
+        description =
+          'The products table is missing a column this import needs. Run scripts/add-product-sku.sql in Supabase.';
+      } else if (e.code === '42501') {
+        description = 'Permission denied by row level security. Check you are signed in as the seller.';
+      }
+
+      setImportError(`${description}${e.code ? `  (${e.code})` : ''}`);
+      toast({ title: 'Import failed', description, variant: 'destructive' });
     } finally {
       setImporting(false);
     }
@@ -492,6 +512,16 @@ const ImportProducts = () => {
 
           {/* Commit */}
           <div className="card-pop p-6">
+            {importError && (
+              <div className="mb-4 rounded-md border-2 border-sale/30 bg-sale/10 p-4 text-left">
+                <p className="flex items-center gap-2 font-bold text-sale">
+                  <AlertTriangle className="h-4 w-4" />
+                  Import failed
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{importError}</p>
+              </div>
+            )}
+
             {imported !== null ? (
               <div className="text-center">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-teal/15">

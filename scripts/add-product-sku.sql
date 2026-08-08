@@ -20,9 +20,13 @@ alter table public.products
 -- Nulls do not collide in a Postgres unique index, so products without a SKU
 -- (everything listed before this migration, and anything added through the
 -- single-product form) are unaffected and can coexist freely.
+-- NOT partial. A plain unique index already permits any number of NULLs, so
+-- products without a SKU coexist freely, and only a plain index can be matched
+-- by the importer's ON CONFLICT (seller_id, sku). An earlier version carried a
+-- `where sku is not null` predicate, which made the index invisible to that
+-- statement and aborted every import with 42P10.
 create unique index if not exists products_seller_sku_key
-  on public.products (seller_id, sku)
-  where sku is not null;
+  on public.products (seller_id, sku);
 
 -- Trim to null so that '', '  ' and absent all behave the same way, rather
 -- than empty strings colliding with each other in the index.
