@@ -3,87 +3,139 @@
 @tailwind components;
 @tailwind utilities;
 
-/* VMK Store Design System - Slate Theme */
+/* VMK Store Design System
+ * Brand: gold + charcoal (retail anchor), red for sale signals.
+ * Category hues are kept alongside so product/category grids stay colourful. */
 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 220 15% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 15% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 15% 12%;
 
-    --primary: 215.4 16.3% 46.9%;
-    --primary-foreground: 210 20% 98%;
+    /* Gold carries every primary CTA — always paired with charcoal ink,
+       never white, since gold/white fails contrast badly. */
+    --primary: 49 100% 50%;
+    --primary-foreground: 220 15% 12%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
+    /* Charcoal: header, footer, dark surfaces */
+    --secondary: 220 15% 12%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 220 9% 42%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --accent: 49 100% 50%;
+    --accent-foreground: 220 15% 12%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Sale / discount red */
+    --destructive: 354 84% 40%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 215.4 16.3% 46.9%;
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
+    --ring: 49 100% 50%;
 
-    --radius: 0.75rem;
+    /* Squared-off geometry, matching the retail reference */
+    --radius: 0.5rem;
 
-    --sidebar-background: 210 40% 96%;
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 215.4 16.3% 46.9%;
-    --sidebar-primary-foreground: 210 20% 98%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222.2 84% 4.9%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 215.4 16.3% 46.9%;
+    /* Brand constants reused across components */
+    --gold: 49 100% 50%;
+    --gold-deep: 45 100% 45%;
+    /* Gold is far too light for text on white (~1.6:1). This darkened gold
+       clears 4.5:1 on white, so it is the only gold allowed for type on
+       light surfaces. Plain --gold stays for fills and for text on charcoal. */
+    --gold-ink: 40 100% 27%;
+    --ink: 220 15% 12%;
+    --ink-soft: 220 14% 18%;
+    --sale: 354 84% 40%;
+
+    /* Category hues — each owns a colour across the whole site.
+       Stored as raw H S% L% so they compose with Tailwind's alpha syntax. */
+    --hue-blue: 224 100% 58%;
+    --hue-violet: 265 84% 58%;
+    --hue-pink: 330 90% 58%;
+    --hue-amber: 38 96% 52%;
+    --hue-teal: 172 82% 42%;
+    --hue-lime: 84 74% 46%;
+    --hue-orange: 20 94% 56%;
+    --hue-cyan: 189 94% 48%;
+    --hue-rose: 348 92% 60%;
+    --hue-indigo: 245 84% 60%;
+
+    --sidebar-background: 0 0% 96%;
+    --sidebar-foreground: 220 15% 12%;
+    --sidebar-primary: 49 100% 50%;
+    --sidebar-primary-foreground: 220 15% 12%;
+    --sidebar-accent: 220 15% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 13% 89%;
+    --sidebar-ring: 49 100% 50%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 220 16% 8%;
+    --foreground: 0 0% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 15% 12%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 15% 12%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 84% 4.9%;
+    /* Gold holds up on dark without adjustment */
+    --primary: 49 100% 50%;
+    --primary-foreground: 220 15% 12%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 14% 18%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 14% 18%;
+    --muted-foreground: 220 9% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 49 100% 50%;
+    --accent-foreground: 220 15% 12%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 354 74% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222.2 84% 4.9%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 212.7 26.8% 83.9%;
+    --border: 220 12% 22%;
+    --input: 220 12% 22%;
+    --ring: 49 100% 50%;
+
+    --gold: 49 100% 50%;
+    --gold-deep: 45 100% 45%;
+    /* On the dark ground the relationship inverts — gold type must go lighter */
+    --gold-ink: 49 100% 62%;
+    --ink: 220 15% 12%;
+    --ink-soft: 220 14% 18%;
+    --sale: 354 74% 50%;
+
+    /* Lifted for contrast against the dark ground */
+    --hue-blue: 224 100% 66%;
+    --hue-violet: 265 84% 68%;
+    --hue-pink: 330 90% 66%;
+    --hue-amber: 38 96% 58%;
+    --hue-teal: 172 72% 52%;
+    --hue-lime: 84 68% 56%;
+    --hue-orange: 20 94% 62%;
+    --hue-cyan: 189 94% 58%;
+    --hue-rose: 348 92% 66%;
+    --hue-indigo: 245 84% 68%;
+
+    --sidebar-background: 220 15% 12%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 49 100% 50%;
+    --sidebar-primary-foreground: 220 15% 12%;
+    --sidebar-accent: 220 14% 18%;
+    --sidebar-accent-foreground: 236 44% 7%;
+    --sidebar-border: 236 30% 20%;
+    --sidebar-ring: 224 100% 66%;
   }
 }
 
@@ -93,13 +145,119 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Headings carry the display face weight */
+  h1, h2, h3 {
+    @apply tracking-tight;
   }
 }
 
-/* Custom scrollbar styling */
+@layer components {
+  /* Text filled with a gradient. Pair with a from-/to- pair. */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r;
+  }
+
+  /* Signature brand wash: charcoal ground with a gold sheen raking across it.
+     Used for dark hero surfaces and banners. */
+  .bg-brand-wash {
+    background-image:
+      linear-gradient(115deg, hsl(var(--gold) / 0.18) 0%, transparent 42%),
+      linear-gradient(120deg, hsl(var(--ink)) 0%, hsl(var(--ink-soft)) 60%, hsl(var(--ink)) 100%);
+  }
+
+  /* Animated version, for the largest hero surfaces */
+  .bg-brand-wash-animated {
+    background-image:
+      linear-gradient(115deg, transparent 0%, hsl(var(--gold) / 0.22) 25%, transparent 55%),
+      linear-gradient(120deg, hsl(var(--ink)) 0%, hsl(var(--ink-soft)) 50%, hsl(var(--ink)) 100%);
+    background-size: 300% 300%, 100% 100%;
+    animation: gradient-pan 14s ease infinite;
+  }
+
+  /* Solid gold sweep, for primary CTAs */
+  .bg-gold-wash {
+    background-image: linear-gradient(
+      120deg,
+      hsl(var(--gold)) 0%,
+      hsl(var(--gold-deep)) 50%,
+      hsl(var(--gold)) 100%
+    );
+  }
+
+  /* Card that lifts on hover. Squared-off to match the retail geometry. */
+  .card-pop {
+    @apply relative rounded-lg border bg-card transition-all duration-300;
+  }
+  .card-pop:hover {
+    @apply -translate-y-1;
+  }
+
+  /* A 1px gold ring drawn with a mask, so the card keeps its fill */
+  .ring-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--gold)),
+      hsl(var(--gold-deep))
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .ring-gradient:hover::before {
+    opacity: 1;
+  }
+
+  /* Frosted surface for sticky chrome */
+  .glass {
+    @apply backdrop-blur-xl bg-background/80;
+  }
+
+  /* Section heading eyebrow */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest;
+  }
+}
+
+@layer utilities {
+  /* Pause every decorative animation for users who ask for less motion */
+  @media (prefers-reduced-motion: reduce) {
+    .bg-brand-wash-animated,
+    .animate-float,
+    .animate-blob,
+    .animate-shimmer,
+    .animate-pulse-glow,
+    .animate-bounce-subtle,
+    .animate-spin-slow,
+    .animate-marquee {
+      animation: none !important;
+    }
+    .card-pop:hover {
+      transform: none;
+    }
+  }
+}
+
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Custom scrollbar — gold thumb */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -107,9 +265,15 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-primary/30 rounded-full;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, hsl(var(--gold)), hsl(var(--gold-deep)));
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary/50;
+  filter: brightness(1.1);
+}
+
+/* Firefox */
+* {
+  scrollbar-color: hsl(var(--gold-deep)) hsl(var(--muted));
 }

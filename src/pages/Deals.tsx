@@ -1,133 +1,140 @@
 
-import React from 'react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Clock, Star, Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import PageShell from '@/components/layout/PageShell';
+import PageHero from '@/components/layout/PageHero';
+import ProductCard from '@/components/product/ProductCard';
+import { Flame, TicketPercent } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useWishlist } from '@/hooks/useWishlist';
+import { supabase } from '@/lib/supabase';
+
+interface DealProduct {
+  id: string;
+  name: string;
+  price: number;
+  original_price: number;
+  average_rating: number;
+  review_count: number;
+  image: string;
+  category: string;
+}
 
 const Deals = () => {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const [deals, setDeals] = useState<DealProduct[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const deals = [
-    {
-      id: 1,
-      title: 'Gaming Laptop Pro',
-      originalPrice: 1299,
-      salePrice: 899,
-      discount: 31,
-      rating: 4.8,
-      reviews: 156,
-      timeLeft: '2 days',
-      image: '/images/products/deals/gaming-laptop-pro.jpg'
-    },
-    {
-      id: 2,
-      title: 'Wireless Headphones',
-      originalPrice: 199,
-      salePrice: 129,
-      discount: 35,
-      rating: 4.6,
-      reviews: 89,
-      timeLeft: '5 hours',
-      image: '/images/products/deals/wireless-headphones.jpg'
-    },
-    {
-      id: 3,
-      title: 'Smart Watch Series 5',
-      originalPrice: 399,
-      salePrice: 279,
-      discount: 30,
-      rating: 4.9,
-      reviews: 203,
-      timeLeft: '1 day',
-      image: '/images/products/deals/smart-watch-series-5.jpg'
-    }
-  ];
+  useEffect(() => {
+    const fetchDeals = async () => {
+      const { data } = await supabase
+        .from('products')
+        .select(`
+          id, name, price, original_price, average_rating, review_count,
+          categories(name),
+          product_images(image_url, is_primary)
+        `)
+        .eq('status', 'active')
+        .not('original_price', 'is', null)
+        .order('original_price', { ascending: false })
+        .limit(6);
 
-  const handleAddToCart = (deal: any) => {
-    addToCart({
-      id: deal.id,
-      name: deal.title,
-      price: deal.salePrice,
-      image: deal.image
-    });
+      if (data) {
+        setDeals(
+          (data as any[])
+            .filter(p => p.original_price > p.price)
+            .map(p => ({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              original_price: p.original_price,
+              average_rating: p.average_rating ?? 0,
+              review_count: p.review_count ?? 0,
+              category: p.categories?.name ?? 'Uncategorized',
+              image:
+                (p.product_images as { image_url: string; is_primary: boolean }[])
+                  ?.sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+                  ?.[0]?.image_url ?? '/placeholder.svg',
+            }))
+        );
+      }
+      setLoading(false);
+    };
+    fetchDeals();
+  }, []);
+
+  const handleAddToCart = (deal: DealProduct) => {
+    addToCart({ id: deal.id, name: deal.name, price: deal.price, image: deal.image });
   };
 
-  const handleWishlistToggle = (deal: any) => {
+  const handleWishlistToggle = (deal: DealProduct) => {
     if (isInWishlist(deal.id)) {
       removeFromWishlist(deal.id);
     } else {
-      addToWishlist({
-        id: deal.id,
-        name: deal.title,
-        price: deal.salePrice,
-        image: deal.image
-      });
+      addToWishlist({ id: deal.id, name: deal.name, price: deal.price, image: deal.image });
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Best Deals</h1>
-          <p className="text-muted-foreground">Limited time offers you don't want to miss</p>
-        </div>
+  const biggestSaving = deals.reduce(
+    (max, d) => Math.max(max, d.original_price - d.price),
+    0
+  );
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {deals.map((deal) => (
-            <Card key={deal.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="relative">
-                <img src={deal.image} alt={deal.title} className="w-full h-48 object-cover" />
-                <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground">
-                  -{deal.discount}%
-                </Badge>
-                <Button 
-                  variant={isInWishlist(deal.id) ? "default" : "ghost"} 
-                  size="icon" 
-                  className="absolute top-3 right-3 bg-background/80 hover:bg-background"
-                  onClick={() => handleWishlistToggle(deal)}
-                >
-                  <Heart className={`h-4 w-4 ${isInWishlist(deal.id) ? 'fill-current' : ''}`} />
-                </Button>
+  return (
+    <PageShell>
+      <PageHero
+        eyebrow="Limited time"
+        title="Best"
+        highlight="Deals"
+        subtitle="Limited time offers you don't want to miss"
+        icon={Flame}
+        hue="pink"
+      >
+        {deals.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            <div className="rounded-2xl border border-brand-pink/30 bg-brand-pink/10 px-5 py-3">
+              <div className="text-2xl font-extrabold text-brand-pink">{deals.length}</div>
+              <div className="text-xs font-medium text-muted-foreground">Live deals</div>
+            </div>
+            <div className="rounded-2xl border border-brand-amber/30 bg-brand-amber/10 px-5 py-3">
+              <div className="text-2xl font-extrabold text-brand-amber">
+                ${biggestSaving.toFixed(0)}
               </div>
-              <CardHeader>
-                <CardTitle className="text-lg">{deal.title}</CardTitle>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm ml-1">{deal.rating}</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">({deal.reviews} reviews)</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <span className="text-2xl font-bold text-primary">${deal.salePrice}</span>
-                    <span className="text-sm text-muted-foreground line-through ml-2">${deal.originalPrice}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {deal.timeLeft} left
-                  </div>
-                </div>
-                <Button className="w-full" onClick={() => handleAddToCart(deal)}>
-                  Add to Cart
-                </Button>
-              </CardContent>
-            </Card>
+              <div className="text-xs font-medium text-muted-foreground">Biggest saving</div>
+            </div>
+          </div>
+        )}
+      </PageHero>
+
+      {loading ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-80 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
-      </div>
-      <Footer />
-    </div>
+      ) : deals.length === 0 ? (
+        <div className="card-pop mx-auto max-w-md p-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-candy text-white">
+            <TicketPercent className="h-8 w-8" />
+          </div>
+          <p className="mb-2 text-lg font-bold">No deals right now</p>
+          <p className="text-muted-foreground">Check back soon — new offers drop every week.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {deals.map((deal, i) => (
+            <ProductCard
+              key={deal.id}
+              product={deal}
+              index={i}
+              wishlisted={isInWishlist(deal.id)}
+              onToggleWishlist={() => handleWishlistToggle(deal)}
+              onAddToCart={() => handleAddToCart(deal)}
+            />
+          ))}
+        </div>
+      )}
+    </PageShell>
   );
 };
 

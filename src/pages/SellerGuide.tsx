@@ -1,31 +1,40 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import PageShell from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, DollarSign, Package, Users, TrendingUp } from 'lucide-react';
+import { CheckCircle, DollarSign, Package, Users, TrendingUp, BookOpen, ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { HUE_STYLES, type Hue } from '@/lib/theme';
 
 const SellerGuide = () => {
-  const steps = [
+  const steps: {
+    step: number;
+    title: string;
+    description: string;
+    icon: typeof Users;
+    hue: Hue;
+  }[] = [
     {
       step: 1,
       title: 'Create Your Seller Account',
       description: 'Sign up and complete your seller profile with business information.',
-      icon: Users
+      icon: Users,
+      hue: 'blue',
     },
     {
       step: 2,
       title: 'List Your Products',
       description: 'Add detailed product descriptions, high-quality photos, and competitive pricing.',
-      icon: Package
+      icon: Package,
+      hue: 'violet',
     },
     {
       step: 3,
       title: 'Start Selling',
       description: 'Once approved, your products go live and customers can start purchasing.',
-      icon: DollarSign
+      icon: DollarSign,
+      hue: 'pink',
     }
   ];
 
@@ -39,82 +48,141 @@ const SellerGuide = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">Seller's Guide</h1>
-          <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Everything you need to know to start selling successfully on VMK Store
-          </p>
-          <Button size="lg" asChild>
-            <Link to="/sell">Start Selling Now</Link>
-          </Button>
-        </div>
+    <PageShell>
+      {/* Hero */}
+      <section className="mb-16 text-center animate-fade-up">
+        <span className="eyebrow mb-5 bg-brand-violet/10 text-brand-violet">
+          <BookOpen className="h-3.5 w-3.5" />
+          Seller resources
+        </span>
+        <h1 className="mb-4 text-5xl font-extrabold tracking-tight md:text-6xl">
+          Seller's{' '}
+          <span className="text-gold-ink">Guide</span>
+        </h1>
+        <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
+          Everything you need to know to start selling successfully on VMK Store
+        </p>
+        <Button variant="gradient" size="xl" asChild>
+          <Link to="/sell">
+            Start Selling Now
+            <ArrowRight className="h-5 w-5" />
+          </Link>
+        </Button>
+      </section>
 
-        <section className="mb-12">
-          <h2 className="text-3xl font-bold text-center mb-8">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {steps.map((step) => {
-              const IconComponent = step.icon;
-              return (
-                <Card key={step.step} className="text-center">
-                  <CardHeader>
-                    <div className="mx-auto w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center mb-4">
-                      <IconComponent className="h-6 w-6" />
-                    </div>
-                    <CardTitle className="text-lg">Step {step.step}</CardTitle>
-                    <CardTitle className="text-lg">{step.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>{step.description}</CardDescription>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
+      {/* Steps */}
+      <section className="mb-16">
+        <h2 className="mb-10 text-center text-4xl font-extrabold tracking-tight">
+          How It{' '}
+          <span className="text-gold-ink">Works</span>
+        </h2>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {steps.map((step, i) => {
+            const s = HUE_STYLES[step.hue];
+            const Icon = step.icon;
+            return (
+              <div
+                key={step.step}
+                className={cn(
+                  'card-pop ring-gradient group relative animate-fade-up p-6 text-center',
+                  s.tint,
+                  s.border,
+                  s.glow
+                )}
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                {/* Big ghost step number */}
+                <span
+                  className={cn(
+                    'pointer-events-none absolute right-4 top-2 text-6xl font-extrabold opacity-10',
+                    s.text
+                  )}
+                >
+                  {step.step}
+                </span>
 
-        <section className="mb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div>
-              <h2 className="text-3xl font-bold mb-6">Why Sell on VMK Store?</h2>
-              <div className="space-y-3">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                    <span>{benefit}</span>
-                  </div>
-                ))}
+                <div
+                  className={cn(
+                    'mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-lift-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6',
+                    s.gradient
+                  )}
+                >
+                  <Icon className="h-8 w-8" />
+                </div>
+                <div className={cn('mb-1 text-xs font-bold uppercase tracking-widest', s.text)}>
+                  Step {step.step}
+                </div>
+                <h3 className="mb-2 text-lg font-bold">{step.title}</h3>
+                <p className="text-sm text-muted-foreground">{step.description}</p>
               </div>
-              <Button className="mt-6" asChild>
-                <Link to="/register">Get Started Today</Link>
-              </Button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Benefits */}
+      <section className="mb-8">
+        <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
+          <div className="animate-fade-up">
+            <h2 className="mb-6 text-4xl font-extrabold tracking-tight">
+              Why Sell on{' '}
+              <span className="text-gold-ink">VMK Store?</span>
+            </h2>
+            <div className="space-y-2.5">
+              {benefits.map((benefit, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 rounded-xl bg-muted/60 px-4 py-3 transition-colors hover:bg-brand-teal/10"
+                >
+                  <CheckCircle className="h-5 w-5 flex-shrink-0 text-brand-teal" />
+                  <span className="font-medium">{benefit}</span>
+                </div>
+              ))}
             </div>
-            <div className="bg-gradient-to-br from-primary/10 to-accent/20 p-8 rounded-lg">
-              <div className="text-center">
-                <TrendingUp className="h-16 w-16 text-primary mx-auto mb-4" />
-                <h3 className="text-2xl font-bold mb-2">Growing Marketplace</h3>
-                <p className="text-muted-foreground mb-4">
-                  Join thousands of successful sellers who trust VMK Store
-                </p>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-primary">50K+</div>
-                    <div className="text-sm text-muted-foreground">Active Buyers</div>
+            <Button variant="gradient" size="lg" className="mt-6" asChild>
+              <Link to="/register">
+                Get Started Today
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="relative animate-fade-up overflow-hidden rounded-[2rem] bg-brand-wash-animated p-10 text-center text-white shadow-lift">
+            <div
+              aria-hidden
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+                backgroundSize: '24px 24px',
+              }}
+            />
+            <div className="relative">
+              <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/20 backdrop-blur-md">
+                <TrendingUp className="h-10 w-10" />
+              </div>
+              <h3 className="mb-2 text-3xl font-extrabold">Growing Marketplace</h3>
+              <p className="mb-8 text-white/80">
+                Join thousands of successful sellers who trust VMK Store
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-white/15 p-4 backdrop-blur-md">
+                  <div className="text-3xl font-extrabold">50K+</div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-white/70">
+                    Active Buyers
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-primary">1M+</div>
-                    <div className="text-sm text-muted-foreground">Monthly Views</div>
+                </div>
+                <div className="rounded-2xl bg-white/15 p-4 backdrop-blur-md">
+                  <div className="text-3xl font-extrabold">1M+</div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-white/70">
+                    Monthly Views
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
-      </div>
-      <Footer />
-    </div>
+        </div>
+      </section>
+    </PageShell>
   );
 };
 

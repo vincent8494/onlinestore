@@ -25,13 +25,13 @@ const statusOptions = [
 const getStatusBadge = (status: ProductStatus) => {
   switch (status) {
     case 'active':
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>;
+      return <Badge variant="success">Active</Badge>;
     case 'pending':
-      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending Review</Badge>;
+      return <Badge variant="warning">Pending Review</Badge>;
     case 'out_of_stock':
-      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Out of Stock</Badge>;
+      return <Badge variant="destructive">Out of Stock</Badge>;
     case 'draft':
-      return <Badge variant="secondary">Draft</Badge>;
+      return <Badge variant="indigo">Draft</Badge>;
     case 'archived':
       return <Badge variant="outline">Archived</Badge>;
     default:

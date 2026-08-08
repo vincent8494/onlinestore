@@ -2,17 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import PageShell from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, Settings, ShoppingBag, Heart, Star, Users, Loader2 } from 'lucide-react';
+import { User, Settings, ShoppingBag, Heart, Star, Users, Loader2, BadgeCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
+import { styleAt } from '@/lib/theme';
 
 interface ProfileFormData {
   firstName: string;
@@ -21,7 +22,7 @@ interface ProfileFormData {
 }
 
 const Profile = () => {
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -64,35 +65,35 @@ const Profile = () => {
     }
 
     setIsLoading(true);
-    
+
     try {
-      // Since we don't have an updateUser function in AuthContext,
-      // we'll simulate an update by logging in again with the same credentials
-      // In a real app, you would call an API to update the user's profile
-      const success = await login(user.email, 'current-password');
-      
-      if (success) {
-        // Update local storage with new profile data
-        const updatedUser = {
-          ...user,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email
-        };
-        
-        localStorage.setItem('vmk_user', JSON.stringify(updatedUser));
-        window.dispatchEvent(new Event('storage')); // Trigger storage event to update context
-        
-        toast({
-          title: 'Success!',
-          description: 'Your profile has been updated.',
-        });
-      }
+      // The signed-in user is derived from the Supabase session's user_metadata,
+      // so updating that is what actually persists a profile change — and it
+      // fires onAuthStateChange, which refreshes the context for us.
+      const emailChanged = formData.email !== user.email;
+
+      const { error } = await supabase.auth.updateUser({
+        ...(emailChanged ? { email: formData.email } : {}),
+        data: {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success!',
+        description: emailChanged
+          ? 'Profile updated. Check your inbox to confirm the new email address.'
+          : 'Your profile has been updated.',
+      });
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update profile. Please try again.',
+        description:
+          error instanceof Error ? error.message : 'Failed to update profile. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -121,9 +122,10 @@ const Profile = () => {
     }
   ]);
 
-  const handleViewStore = (storeSlug: string) => {
-    // Navigate to the seller's store page
-    navigate(`/store/${storeSlug}`);
+  const handleViewStore = (storeName: string) => {
+    // There is no /store/:slug route; the marketplace surfaces a seller's
+    // listings through the products page, same as every other seller link.
+    navigate(`/products?seller=${encodeURIComponent(storeName)}`);
   };
 
   const handleUnfollowSeller = (sellerId: string) => {
@@ -138,196 +140,266 @@ const Profile = () => {
     });
   };
 
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || 'VM';
+
+  /** Empty-state block shared by the Orders / Wishlist / Settings tabs. */
+  const EmptyTab = ({
+    icon: Icon,
+    title,
+    body,
+    gradient,
+  }: {
+    icon: typeof ShoppingBag;
+    title: string;
+    body: string;
+    gradient: string;
+  }) => (
+    <div className="py-10 text-center">
+      <div
+        className={cn(
+          'mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-lift-sm',
+          gradient
+        )}
+      >
+        <Icon className="h-8 w-8" />
+      </div>
+      <h3 className="mb-1 text-lg font-bold">{title}</h3>
+      <p className="text-muted-foreground">{body}</p>
+    </div>
+  );
+
+  const TABS = [
+    { value: 'profile', label: 'Profile' },
+    { value: 'orders', label: 'Orders' },
+    { value: 'wishlist', label: 'Wishlist' },
+    { value: 'following', label: 'Following' },
+    { value: 'settings', label: 'Settings' },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Profile</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
+    <PageShell>
+      {/* Profile banner */}
+      <div className="card-pop mb-8 animate-fade-up overflow-hidden">
+        <div className="relative h-32 bg-brand-wash-animated">
+          <div
+            aria-hidden
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}
+          />
         </div>
+        <div className="flex flex-col gap-4 px-6 pb-6 sm:flex-row sm:items-end">
+          <div className="-mt-12 shrink-0">
+            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-brand-gradient text-3xl font-extrabold text-ink shadow-lift ring-4 ring-background">
+              {initials}
+            </div>
+          </div>
+          <div className="flex-1 sm:pb-1">
+            <h1 className="text-3xl font-extrabold tracking-tight">
+              {user?.firstName || 'My'}{' '}
+              <span className="text-gold-ink">
+                {user?.lastName || 'Profile'}
+              </span>
+            </h1>
+            <p className="text-muted-foreground">
+              {user?.email || 'Manage your account settings and preferences'}
+            </p>
+          </div>
+        </div>
+      </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
-            <TabsTrigger value="following">Following</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-muted p-1.5 sm:grid-cols-5">
+          {TABS.map(t => (
+            <TabsTrigger
+              key={t.value}
+              value={t.value}
+              className="rounded-xl py-2 text-sm font-bold data-[state=active]:bg-brand-gradient data-[state=active]:text-ink data-[state=active]:shadow-lift-sm"
+            >
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-          <TabsContent value="profile" className="space-y-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your personal details</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form onSubmit={handleSubmit}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input 
-                        id="firstName" 
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input 
-                        id="lastName" 
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2 mb-6">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      value={formData.email}
+        <TabsContent value="profile">
+          <div className="card-pop overflow-hidden">
+            <div className="flex items-center gap-3 bg-ocean p-5 text-white">
+              <User className="h-5 w-5" />
+              <div>
+                <h2 className="text-lg font-bold">Personal Information</h2>
+                <p className="text-sm text-white/80">Update your personal details</p>
+              </div>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleSubmit}>
+                <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      First Name
+                    </Label>
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
                       onChange={handleInputChange}
+                      className="h-12 rounded-xl border-2"
                       required
                     />
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="hover:bg-primary/90 transition-colors"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Changes'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="orders" className="space-y-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle>Order History</CardTitle>
-                <CardDescription>View your recent orders</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No orders yet. Start shopping to see your order history here.</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Last Name
+                    </Label>
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      className="h-12 rounded-xl border-2"
+                      required
+                    />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="wishlist" className="space-y-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle>Saved Items</CardTitle>
-                <CardDescription>Items you've saved for later</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No saved items yet. Browse products and add them to your wishlist.</p>
+                <div className="mb-6 space-y-2">
+                  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="h-12 rounded-xl border-2"
+                    required
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <Button type="submit" variant="gradient" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
+              </form>
+            </div>
+          </div>
+        </TabsContent>
 
-          <TabsContent value="following" className="space-y-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle>Followed Sellers</CardTitle>
-                <CardDescription>Sellers you're currently following</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {followedSellers.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {followedSellers.map((seller) => (
-                      <Card key={seller.id} className="hover:shadow-md transition-all duration-200 hover:scale-105">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={seller.avatar} alt={seller.name} />
-                              <AvatarFallback>{seller.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-sm">{seller.name}</h3>
-                                {seller.verified && (
-                                  <Badge className="bg-blue-500 text-white text-xs">Verified</Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <div className="flex items-center">
-                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                  {seller.rating}
-                                </div>
-                                <div className="flex items-center">
-                                  <Users className="h-3 w-3 mr-1" />
-                                  {seller.followers.toLocaleString()}
-                                </div>
-                              </div>
+        <TabsContent value="orders">
+          <div className="card-pop p-6">
+            <EmptyTab
+              icon={ShoppingBag}
+              title="No orders yet"
+              body="Start shopping to see your order history here."
+              gradient="bg-ocean"
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="wishlist">
+          <div className="card-pop p-6">
+            <EmptyTab
+              icon={Heart}
+              title="No saved items yet"
+              body="Browse products and add them to your wishlist."
+              gradient="bg-candy"
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="following">
+          <div className="card-pop overflow-hidden">
+            <div className="flex items-center gap-3 bg-mint p-5 text-white">
+              <Users className="h-5 w-5" />
+              <div>
+                <h2 className="text-lg font-bold">Followed Sellers</h2>
+                <p className="text-sm text-white/80">Sellers you're currently following</p>
+              </div>
+            </div>
+            <div className="p-6">
+              {followedSellers.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {followedSellers.map((seller, i) => {
+                    const style = styleAt(i);
+                    return (
+                      <div
+                        key={seller.id}
+                        className={cn('card-pop group p-4', style.tint, style.border, style.glow)}
+                      >
+                        <div className="mb-3 flex items-center gap-3">
+                          <Avatar className={cn('h-12 w-12 ring-2', style.border)}>
+                            <AvatarImage src={seller.avatar} alt={seller.name} />
+                            <AvatarFallback className={cn(style.bg, 'font-bold text-white')}>
+                              {seller.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="truncate text-sm font-bold">{seller.name}</h3>
+                              {seller.verified && (
+                                <BadgeCheck className={cn('h-4 w-4 shrink-0', style.text)} />
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3 fill-brand-amber text-brand-amber" />
+                                {seller.rating}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {seller.followers.toLocaleString()}
+                              </span>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              className="flex-1 hover:bg-primary/90 transition-colors"
-                              onClick={() => handleViewStore(seller.storeSlug)}
-                            >
-                              View Store
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1 hover:bg-destructive/10 hover:text-destructive transition-colors"
-                              onClick={() => handleUnfollowSeller(seller.id)}
-                            >
-                              Unfollow
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>You're not following any sellers yet. Browse sellers and start following them.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>Manage your account preferences</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Account settings will be available here.</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className={cn('flex-1 text-white', style.bg)}
+                            onClick={() => handleViewStore(seller.name)}
+                          >
+                            View Store
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 hover:border-brand-rose hover:text-brand-rose"
+                            onClick={() => handleUnfollowSeller(seller.id)}
+                          >
+                            Unfollow
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-      <Footer />
-    </div>
+              ) : (
+                <EmptyTab
+                  icon={Users}
+                  title="Not following anyone yet"
+                  body="Browse sellers and start following them."
+                  gradient="bg-mint"
+                />
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <div className="card-pop p-6">
+            <EmptyTab
+              icon={Settings}
+              title="Account settings"
+              body="Account settings will be available here."
+              gradient="bg-sunrise"
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </PageShell>
   );
 };
 

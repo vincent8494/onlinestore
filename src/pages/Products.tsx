@@ -1,129 +1,99 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import PageShell from '@/components/layout/PageShell';
+import PageHero from '@/components/layout/PageHero';
+import ProductCard from '@/components/product/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Star, Heart, ShoppingCart, Grid, List } from 'lucide-react';
+import { Search, Grid, List, PackageSearch, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useWishlist } from '@/hooks/useWishlist';
-import { electronicsProducts } from '@/data/products';
-import { fashionProducts } from '@/data/fashionProducts';
-import { beautyProducts } from '@/data/beautyProducts';
-import { groceryProducts } from '@/data/groceryProducts';
-import { homeProducts } from '@/data/homeProducts';
+import { supabase } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
+import { categoryStyle } from '@/lib/theme';
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  original_price: number | null;
+  stock_quantity: number;
+  average_rating: number;
+  review_count: number;
+  category: string;
+  image: string;
+}
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('relevance');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  
-  const { addToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist, wishlistItems } = useWishlist();
+  // Seeded from the URL so category links from the homepage tiles, the
+  // Categories page and the header mega-menu actually arrive filtered.
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+
+  // Keep local filter state in step with back/forward navigation and with
+  // links followed while already on this page.
   useEffect(() => {
-    const search = searchParams.get('search');
-    if (search) {
-      setSearchTerm(search);
-    }
+    setSearchTerm(searchParams.get('search') ?? '');
+    setCategoryFilter(searchParams.get('category') ?? 'all');
   }, [searchParams]);
 
-  // Helper function to generate a random rating between 3.5 and 5
-  const getRandomRating = () => Number((Math.random() * 1.5 + 3.5).toFixed(1));
-  
-  // Helper function to generate a random number of reviews
-  const getRandomReviews = () => Math.floor(Math.random() * 500) + 1;
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('products')
+        .select(`
+          id, name, price, original_price, stock_quantity, average_rating, review_count,
+          categories(name),
+          product_images(image_url, is_primary, display_order)
+        `)
+        .eq('status', 'active');
 
-  // Existing products
-  const existingProducts = [
+      if (data) {
+        setProducts(
+          (data as any[]).map(p => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            original_price: p.original_price ?? null,
+            stock_quantity: p.stock_quantity,
+            average_rating: p.average_rating ?? 0,
+            review_count: p.review_count ?? 0,
+            category: p.categories?.name ?? 'Uncategorized',
+            image:
+              (p.product_images as { image_url: string; is_primary: boolean; display_order: number }[])
+                ?.sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+                ?.[0]?.image_url ?? '/placeholder.svg',
+          }))
+        );
+      }
+      setLoading(false);
+    };
+    fetchProducts();
+  }, []);
 
-    ];
-
-  // Helper function to generate unique IDs
-  const generateUniqueId = (() => {
-    let idCounter = 0;
-    return (prefix = '') => `${prefix}${++idCounter}`;
-  })();
-
-  // Format electronics products to match the existing product structure
-  const formattedElectronics = electronicsProducts.map((product) => ({
-    ...product,
-    id: generateUniqueId('e-'),
-    originalPrice: Math.random() > 0.3 ? Math.round(product.price * (1 + Math.random() * 0.5)) : null,
-    rating: getRandomRating(),
-    reviews: getRandomReviews(),
-    seller: 'TechStore Pro',
-    badge: Math.random() > 0.7 ? 'New' : Math.random() > 0.5 ? 'Hot Deal' : null,
-    inStock: Math.random() > 0.1, // 90% chance of being in stock
-    image: product.image || '/placeholder.svg'}));
-
-  // Format fashion products to match the existing product structure
-  const formattedFashion = fashionProducts.map((product) => ({
-    ...product,
-    id: generateUniqueId('f-'),
-    originalPrice: Math.random() > 0.2 ? Math.round(product.price * (1 + Math.random() * 0.4)) : null,
-    rating: getRandomRating(),
-    reviews: getRandomReviews(),
-    seller: 'FashionHub',
-    badge: Math.random() > 0.8 ? 'New' : Math.random() > 0.6 ? 'Sale' : null,
-    inStock: Math.random() > 0.05, // 95% chance of being in stock
-    image: product.image || '/placeholder.svg'}));
-
-  // Format beauty products to match the existing product structure
-  const formattedBeauty = beautyProducts.map((product) => ({
-    ...product,
-    id: generateUniqueId('b-'),
-    originalPrice: Math.random() > 0.25 ? Math.round(product.price * (1 + Math.random() * 0.3)) : null,
-    rating: getRandomRating(),
-    reviews: getRandomReviews(),
-    seller: 'BeautyEssentials',
-    badge: Math.random() > 0.85 ? 'Bestseller' : Math.random() > 0.7 ? 'Limited Time' : null,
-    inStock: Math.random() > 0.03, // 97% chance of being in stock
-    image: product.image || '/placeholder.svg'}));
-
-  // Format grocery products to match the existing product structure
-  const formattedGrocery = groceryProducts.map((product) => ({
-    ...product,
-    id: generateUniqueId('g-'),
-    name: product.name + (product.size ? ` (${product.size})` : ''),
-    originalPrice: Math.random() > 0.3 ? Math.round(product.price * (1 + Math.random() * 0.2) * 10) / 10 : null,
-    rating: getRandomRating(),
-    reviews: getRandomReviews(),
-    seller: 'FreshMart',
-    badge: Math.random() > 0.9 ? 'Popular' : Math.random() > 0.8 ? 'On Sale' : null,
-    inStock: Math.random() > 0.02, // 98% chance of being in stock
-    image: product.image || '/placeholder.svg'}));
-
-  // Format home & kitchen products to match the existing product structure
-  const formattedHome = homeProducts.map((product) => ({
-    ...product,
-    id: generateUniqueId('h-'),
-    name: product.name + (product.size ? ` (${product.size})` : ''),
-    originalPrice: Math.random() > 0.35 ? Math.round(product.price * (1 + Math.random() * 0.25) * 10) / 10 : null,
-    rating: getRandomRating(),
-    reviews: getRandomReviews(),
-    seller: 'HomeEssentials',
-    badge: Math.random() > 0.9 ? 'Bestseller' : Math.random() > 0.8 ? 'New Arrival' : null,
-    inStock: Math.random() > 0.01, // 99% chance of being in stock
-    image: product.image || '/placeholder.svg'}));
-
-  // Combine all products
-  const products = [
-    ...existingProducts, 
-    ...formattedElectronics, 
-    ...formattedFashion, 
-    ...formattedBeauty, 
-    ...formattedGrocery,
-    ...formattedHome
+  // Include the active filter even when no loaded product carries it, so a
+  // category link from elsewhere on the site still shows a labelled control
+  // rather than an empty select.
+  const categories = [
+    'all',
+    ...Array.from(
+      new Set([
+        ...products.map(p => p.category),
+        ...(categoryFilter !== 'all' ? [categoryFilter] : []),
+      ])
+    ).sort(),
   ];
-
-  const categories = ['all', 'Electronics', 'Fashion', 'Beauty & Personal Care', 'Groceries', 'Home & Kitchen', 'Food', 'Home & Garden', 'Sports'];
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -133,230 +103,201 @@ const Products = () => {
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortBy) {
-      case 'price-low':
-        return Number(a.price) - Number(b.price);
-      case 'price-high':
-        return Number(b.price) - Number(a.price);
-      case 'rating':
-        return Number(b.rating) - Number(a.rating);
-      case 'newest':
-        // Convert string IDs to numbers for comparison, fallback to 0 if conversion fails
-        const idA = typeof a.id === 'string' ? parseInt(a.id.replace(/[^0-9]/g, '') || '0', 10) : Number(a.id);
-        const idB = typeof b.id === 'string' ? parseInt(b.id.replace(/[^0-9]/g, '') || '0', 10) : Number(b.id);
-        return idB - idA;
-      default:
-        return 0;
+      case 'price-low': return a.price - b.price;
+      case 'price-high': return b.price - a.price;
+      case 'rating': return b.average_rating - a.average_rating;
+      default: return 0;
     }
   });
 
-  // Helper function to convert product ID to number
-  const toNumberId = (id: string | number): number => {
-    return typeof id === 'string' 
-      ? parseInt(id.replace(/[^0-9]/g, '') || '0', 10)
-      : Number(id);
+  const handleAddToCart = (product: Product) => {
+    addToCart({ id: product.id, name: product.name, price: product.price, image: product.image });
   };
 
-  const handleAddToCart = (product: {
-    id: string | number;
-    name: string;
-    price: number;
-    image?: string;
-  }) => {
-    addToCart({
-      id: toNumberId(product.id),
-      name: product.name,
-      price: product.price,
-      image: product.image || '/placeholder.svg'
-    });
-  };
-
-  const handleWishlistToggle = (product: {
-    id: string | number;
-    name: string;
-    price: number;
-    image?: string;
-  }) => {
-    const productId = toNumberId(product.id);
-
-    if (isInWishlist(productId)) {
-      removeFromWishlist(productId);
+  const handleWishlistToggle = (product: Product) => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
     } else {
-      addToWishlist({
-        id: productId,
-        name: product.name,
-        price: product.price,
-        image: product.image || '/placeholder.svg'
-      });
+      addToWishlist({ id: product.id, name: product.name, price: product.price, image: product.image });
     }
+  };
+
+  /** Writes a filter change back to the URL; the effect above mirrors it into
+   *  state. Keeps the view shareable and the Back button meaningful. */
+  const updateParams = (next: { search?: string; category?: string }) => {
+    const params: Record<string, string> = {};
+    const search = next.search ?? searchTerm;
+    const category = next.category ?? categoryFilter;
+    if (search) params.search = search;
+    if (category && category !== 'all') params.category = category;
+    setSearchParams(params);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearchParams(searchTerm ? { search: searchTerm } : {});
+    updateParams({ search: searchTerm });
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">All Products</h1>
-          <p className="text-muted-foreground">Discover amazing products from trusted sellers</p>
-        </div>
+  const handleCategoryChange = (cat: string) => updateParams({ category: cat });
 
-        {/* Search and Filters */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-8">
-          <div className="flex-1 relative">
-            <form onSubmit={handleSearch}>
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </form>
+  return (
+    <PageShell>
+      <PageHero
+        eyebrow="Marketplace"
+        title="All"
+        highlight="Products"
+        subtitle="Discover amazing products from trusted sellers"
+        icon={ShoppingBag}
+        hue="blue"
+      />
+
+      {/* Search + filters */}
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row">
+        <form onSubmit={handleSearch} className="group relative flex-1">
+          <div className="absolute -inset-0.5 rounded-full bg-brand-gradient opacity-0 blur transition-opacity duration-300 group-focus-within:opacity-50" />
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-brand-violet" />
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-11 rounded-full border-2 border-transparent bg-muted pl-11 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
           </div>
-          <div className="flex gap-2">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category === 'all' ? 'All Categories' : category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={viewMode === 'grid' ? 'default' : 'outline'} 
-              size="icon"
+        </form>
+
+        <div className="flex flex-wrap gap-2">
+          <Select value={categoryFilter} onValueChange={handleCategoryChange}>
+            <SelectTrigger className="h-11 w-44 rounded-full border-2">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map(cat => (
+                <SelectItem key={cat} value={cat}>
+                  {cat === 'all' ? 'All Categories' : cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="h-11 w-44 rounded-full border-2">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="relevance">Relevance</SelectItem>
+              <SelectItem value="price-low">Price: Low to High</SelectItem>
+              <SelectItem value="price-high">Price: High to Low</SelectItem>
+              <SelectItem value="rating">Highest Rated</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* View toggle */}
+          <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+            <button
+              type="button"
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
               onClick={() => setViewMode('grid')}
+              className={cn(
+                'flex h-9 w-9 items-center justify-center rounded-full transition-all',
+                viewMode === 'grid'
+                  ? 'bg-brand-gradient text-ink shadow-lift-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
             >
               <Grid className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={viewMode === 'list' ? 'default' : 'outline'} 
-              size="icon"
+            </button>
+            <button
+              type="button"
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
               onClick={() => setViewMode('list')}
+              className={cn(
+                'flex h-9 w-9 items-center justify-center rounded-full transition-all',
+                viewMode === 'list'
+                  ? 'bg-brand-gradient text-ink shadow-lift-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
             >
               <List className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Results count */}
-        <div className="mb-6">
-          <p className="text-sm text-muted-foreground">
-            Showing {sortedProducts.length} of {products.length} products
-          </p>
-        </div>
-
-        {/* Products Grid/List */}
-        <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
-          : 'space-y-4'
-        }>
-          {sortedProducts.map((product) => (
-            <Card key={product.id} className={`group hover:shadow-xl transition-all duration-300 ${
-              viewMode === 'list' ? 'flex flex-row' : ''
-            } ${!product.inStock ? 'opacity-60' : ''}`}>
-              <div className={`relative overflow-hidden ${
-                viewMode === 'list' ? 'w-48 h-32' : 'w-full h-48'
-              }`}>
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <Badge className={`absolute top-3 left-3 ${
-                  product.badge === 'Best Seller' ? 'bg-orange-500' :
-                  product.badge === 'New' ? 'bg-green-500' :
-                  product.badge === 'Premium' ? 'bg-purple-500' :
-                  product.badge === 'Hot Deal' ? 'bg-red-500' :
-                  product.badge === 'Sale' ? 'bg-blue-500' :
-                  'bg-emerald-500'
-                }`}>
-                  {product.badge}
-                </Badge>
-                {!product.inStock && (
-                  <Badge className="absolute top-3 right-3 bg-gray-500">
-                    Out of Stock
-                  </Badge>
+      {/* Category quick-filter chips — the rainbow row */}
+      {categories.length > 1 && (
+        <div className="mb-8 flex flex-wrap gap-2">
+          {categories.map(cat => {
+            const style = categoryStyle(cat);
+            const active = categoryFilter === cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => handleCategoryChange(cat)}
+                className={cn(
+                  'rounded-full px-4 py-1.5 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5',
+                  active
+                    ? cat === 'all'
+                      ? 'bg-brand-gradient text-ink shadow-lift-sm'
+                      : cn(style.bg, 'text-white shadow-lift-sm')
+                    : cat === 'all'
+                      ? 'bg-muted text-muted-foreground hover:text-foreground'
+                      : cn(style.tint, style.text)
                 )}
-                <Button
-                  size="icon"
-                  variant={isInWishlist(toNumberId(product.id)) ? "default" : "secondary"}
-                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => handleWishlistToggle(product)}
-                >
-                  <Heart className={`h-4 w-4 ${isInWishlist(toNumberId(product.id)) ? 'fill-current' : ''}`} />
-                </Button>
-              </div>
-              
-              <div className={`p-4 ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>
-                <div>
-                  <h3 className={`font-semibold mb-2 line-clamp-2 ${
-                    viewMode === 'list' ? 'text-lg' : 'text-sm'
-                  }`}>
-                    {product.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-2">by {product.seller}</p>
-                  <div className="flex items-center gap-1 mb-2">
-                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                    <span className="text-xs font-medium">{product.rating}</span>
-                    <span className="text-xs text-muted-foreground">({product.reviews})</span>
-                  </div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="font-bold text-primary">${product.price}</span>
-                    {product.originalPrice && (
-                      <span className="text-xs text-muted-foreground line-through">
-                        ${product.originalPrice}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full" 
-                  size="sm"
-                  disabled={!product.inStock}
-                  onClick={() => handleAddToCart(product)}
-                >
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                </Button>
-              </div>
-            </Card>
+              >
+                {cat === 'all' ? 'All Categories' : cat}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading && (
+        <p className="mb-6 text-sm text-muted-foreground">
+          Showing <span className="font-bold text-foreground">{sortedProducts.length}</span> of{' '}
+          <span className="font-bold text-foreground">{products.length}</span> products
+        </p>
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-80 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
-
-        {sortedProducts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-lg text-muted-foreground mb-4">No products found</p>
-            <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
+      ) : sortedProducts.length > 0 ? (
+        <div
+          className={
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+              : 'space-y-4'
+          }
+        >
+          {sortedProducts.map((product, i) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              view={viewMode}
+              index={i}
+              wishlisted={isInWishlist(product.id)}
+              onToggleWishlist={() => handleWishlistToggle(product)}
+              onAddToCart={() => handleAddToCart(product)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="card-pop mx-auto max-w-md p-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-gradient text-ink">
+            <PackageSearch className="h-8 w-8" />
           </div>
-        )}
-      </div>
-      <Footer />
-    </div>
+          <p className="mb-2 text-lg font-bold">No products found</p>
+          <p className="text-muted-foreground">Try adjusting your search or filters</p>
+        </div>
+      )}
+    </PageShell>
   );
 };
 

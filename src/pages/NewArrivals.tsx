@@ -1,143 +1,121 @@
 
-import React from 'react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import PageShell from '@/components/layout/PageShell';
+import PageHero from '@/components/layout/PageHero';
+import ProductCard from '@/components/product/ProductCard';
 import { Badge } from '@/components/ui/badge';
-import { Star, Heart, Eye } from 'lucide-react';
+import { Sparkles, PackagePlus } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useWishlist } from '@/hooks/useWishlist';
+import { supabase } from '@/lib/supabase';
+
+interface NewProduct {
+  id: string;
+  name: string;
+  price: number;
+  average_rating: number;
+  review_count: number;
+  category: string;
+  image: string;
+}
 
 const NewArrivals = () => {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const [products, setProducts] = useState<NewProduct[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const products = [
-    {
-      id: 1,
-      title: 'Premium Bluetooth Speaker',
-      price: 149,
-      rating: 4.7,
-      reviews: 23,
-      isNew: true,
-      category: 'Electronics',
-      image: '/images/products/new-arrivals/premium-bluetooth-speaker.jpg'
-    },
-    {
-      id: 2,
-      title: 'Classic Wristwatch',
-      price: 89,
-      rating: 4.5,
-      reviews: 12,
-      isNew: true,
-      category: 'Fashion',
-      image: '/images/products/new-arrivals/classic-wristwatch.jpg'
-    },
-    {
-      id: 3,
-      title: 'Gourmet Coffee',
-      price: 24,
-      rating: 4.9,
-      reviews: 45,
-      isNew: true,
-      category: 'Food & Drinks',
-      image: '/images/products/new-arrivals/gourmet-coffee.jpg'
-    },
-    {
-      id: 4,
-      title: 'Fitness Tracker Band',
-      price: 79,
-      rating: 4.4,
-      reviews: 18,
-      isNew: true,
-      category: 'Sports',
-      image: '/images/products/new-arrivals/fitness-tracker-band.jpg'
-    }
-  ];
+  useEffect(() => {
+    const fetchNewArrivals = async () => {
+      const { data } = await supabase
+        .from('products')
+        .select(`
+          id, name, price, average_rating, review_count,
+          categories(name),
+          product_images(image_url, is_primary)
+        `)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(8);
 
-  const handleAddToCart = (product: any) => {
-    addToCart({
-      id: product.id,
-      name: product.title,
-      price: product.price,
-      image: product.image
-    });
+      if (data) {
+        setProducts(
+          (data as any[]).map(p => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            average_rating: p.average_rating ?? 0,
+            review_count: p.review_count ?? 0,
+            category: p.categories?.name ?? 'Uncategorized',
+            image:
+              (p.product_images as { image_url: string; is_primary: boolean }[])
+                ?.sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+                ?.[0]?.image_url ?? '/placeholder.svg',
+          }))
+        );
+      }
+      setLoading(false);
+    };
+    fetchNewArrivals();
+  }, []);
+
+  const handleAddToCart = (product: NewProduct) => {
+    addToCart({ id: product.id, name: product.name, price: product.price, image: product.image });
   };
 
-  const handleWishlistToggle = (product: any) => {
+  const handleWishlistToggle = (product: NewProduct) => {
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
     } else {
-      addToWishlist({
-        id: product.id,
-        name: product.title,
-        price: product.price,
-        image: product.image
-      });
+      addToWishlist({ id: product.id, name: product.name, price: product.price, image: product.image });
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">New Arrivals</h1>
-          <p className="text-muted-foreground">Fresh products just added to our marketplace</p>
-        </div>
+    <PageShell>
+      <PageHero
+        eyebrow="Just landed"
+        title="New"
+        highlight="Arrivals"
+        subtitle="Fresh products just added to our marketplace"
+        icon={Sparkles}
+        hue="amber"
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-              <div className="relative">
-                <img src={product.image} alt={product.title} className="w-full h-48 object-cover" />
-                {product.isNew && (
-                  <Badge className="absolute top-3 left-3 bg-green-500 text-white">
-                    NEW
-                  </Badge>
-                )}
-                <div className="absolute top-3 right-3 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button 
-                    variant={isInWishlist(product.id) ? "default" : "ghost"}
-                    size="icon" 
-                    className="bg-background/80 hover:bg-background"
-                    onClick={() => handleWishlistToggle(product)}
-                  >
-                    <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="bg-background/80 hover:bg-background">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs">
-                    {product.category}
-                  </Badge>
-                  <div className="flex items-center">
-                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                    <span className="text-xs ml-1">{product.rating}</span>
-                  </div>
-                </div>
-                <CardTitle className="text-sm line-clamp-2">{product.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-lg font-bold text-primary">${product.price}</span>
-                  <span className="text-xs text-muted-foreground">({product.reviews} reviews)</span>
-                </div>
-                <Button className="w-full" size="sm" onClick={() => handleAddToCart(product)}>
-                  Add to Cart
-                </Button>
-              </CardContent>
-            </Card>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-80 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
-      </div>
-      <Footer />
-    </div>
+      ) : products.length === 0 ? (
+        <div className="card-pop mx-auto max-w-md p-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-sunrise text-white">
+            <PackagePlus className="h-8 w-8" />
+          </div>
+          <p className="mb-2 text-lg font-bold">Nothing new yet</p>
+          <p className="text-muted-foreground">New products land here as sellers list them.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {products.map((product, i) => (
+            <div key={product.id} className="relative">
+              {/* NEW flag sits above the card's own badge stack */}
+              <Badge variant="fresh" className="absolute -left-1 -top-1 z-10 shadow-lift-sm">
+                NEW
+              </Badge>
+              <ProductCard
+                product={product}
+                index={i}
+                wishlisted={isInWishlist(product.id)}
+                onToggleWishlist={() => handleWishlistToggle(product)}
+                onAddToCart={() => handleAddToCart(product)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </PageShell>
   );
 };
 
