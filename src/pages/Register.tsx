@@ -109,7 +109,7 @@ const Register = () => {
       footer={
         <p className="text-muted-foreground">
           Already have an account?{' '}
-          <Link to="/login" className="font-bold text-brand-violet hover:underline">
+          <Link to="/login" className="font-bold text-gold-ink hover:underline">
             Sign in here
           </Link>
         </p>
@@ -300,11 +300,11 @@ const Register = () => {
               />
               <Label htmlFor="agreeTerms" className="text-sm font-normal leading-snug">
                 I agree to the{' '}
-                <Link to="/terms" className="font-semibold text-brand-violet hover:underline">
+                <Link to="/terms" className="font-semibold text-gold-ink hover:underline">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link to="/privacy" className="font-semibold text-brand-violet hover:underline">
+                <Link to="/privacy" className="font-semibold text-gold-ink hover:underline">
                   Privacy Policy
                 </Link>
               </Label>

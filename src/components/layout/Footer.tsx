@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HUE_STYLES, type Hue } from '@/lib/theme';
+import Logo from '@/components/brand/Logo';
 
 /** Link columns, each with its own hue for the heading and hover states. */
 const COLUMNS: { title: string; hue: Hue; links: { to: string; label: string }[] }[] = [
@@ -116,18 +117,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Company Info */}
           <div>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-md bg-gold p-2.5">
-                <Store className="h-5 w-5 text-ink" />
-              </div>
-              <div>
-                <h3 className="text-lg font-extrabold uppercase tracking-wide">
-                  <span className="text-gold">VMK</span> Store
-                </h3>
-                <p className="text-2xs font-medium uppercase tracking-widest text-white/50">
-                  Buy &amp; Sell Marketplace
-                </p>
-              </div>
+            <div className="mb-4">
+              <Logo size="xl" />
             </div>
             <p className="mb-5 text-sm leading-relaxed text-white/60">
               Your trusted marketplace for buying and selling quality products.

@@ -56,7 +56,7 @@ const Login = () => {
       footer={
         <p className="text-muted-foreground">
           Don't have an account?{' '}
-          <Link to="/register" className="font-bold text-brand-violet hover:underline">
+          <Link to="/register" className="font-bold text-gold-ink hover:underline">
             Sign up here
           </Link>
         </p>
@@ -130,7 +130,7 @@ const Login = () => {
             </div>
             <Link
               to="/forgot-password"
-              className="text-sm font-semibold text-brand-violet hover:underline"
+              className="text-sm font-semibold text-gold-ink hover:underline"
             >
               Forgot password?
             </Link>

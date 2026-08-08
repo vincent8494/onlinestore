@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, ShieldCheck, Truck, Sparkles, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Truck, Sparkles, ArrowLeft } from 'lucide-react';
+import Logo from '@/components/brand/Logo';
 
 interface AuthShellProps {
   title: string;
@@ -42,17 +43,7 @@ const AuthShell = ({ title, highlight, subtitle, children, footer }: AuthShellPr
       </div>
 
       <div className="relative p-12">
-        <Link to="/" className="inline-flex items-center gap-3 text-white">
-          <div className="rounded-2xl bg-white/20 p-3 backdrop-blur-md">
-            <Store className="h-7 w-7" />
-          </div>
-          <div>
-            <div className="text-2xl font-extrabold tracking-tight">VMK Store</div>
-            <div className="text-xs font-medium uppercase tracking-widest text-white/70">
-              Buy &amp; Sell Marketplace
-            </div>
-          </div>
-        </Link>
+        <Logo size="xl" />
       </div>
 
       <div className="relative p-12">
@@ -105,16 +96,9 @@ const AuthShell = ({ title, highlight, subtitle, children, footer }: AuthShellPr
 
       <div className="w-full max-w-md animate-fade-up py-8">
         {/* Mobile logo */}
-        <Link to="/" className="mb-8 flex items-center justify-center gap-3 lg:hidden">
-          <div className="rounded-2xl bg-brand-gradient p-2.5 text-ink shadow-lift-sm">
-            <Store className="h-6 w-6" />
-          </div>
-          <div>
-            <div className="text-xl font-extrabold tracking-tight">
-              <span className="text-gold-ink">VMK</span> Store
-            </div>
-          </div>
-        </Link>
+        <div className="mb-8 flex justify-center lg:hidden">
+          <Logo size="lg" />
+        </div>
 
         <div className="mb-8">
           <h1 className="mb-2 text-4xl font-extrabold tracking-tight">

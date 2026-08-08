@@ -22,6 +22,7 @@ import { useCart } from '@/hooks/useCart';
 import { cn } from '@/lib/utils';
 import { HUE_STYLES } from '@/lib/theme';
 import { NAV_ITEMS } from '@/components/layout/megaMenu';
+import Logo from '@/components/brand/Logo';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -72,19 +73,7 @@ const Header = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between gap-4 py-3">
             {/* Logo */}
-            <Link to="/" className="group flex shrink-0 items-center gap-3">
-              <div className="rounded-md bg-gold p-2.5 text-ink transition-transform group-hover:scale-105">
-                <Store className="h-6 w-6" />
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-extrabold uppercase tracking-wide">
-                  <span className="text-gold">VMK</span> Store
-                </h1>
-                <p className="text-2xs font-medium uppercase tracking-[0.2em] text-white/50">
-                  Buy &amp; Sell Marketplace
-                </p>
-              </div>
-            </Link>
+            <Logo size="lg" />
 
             {/* Search */}
             <div className="mx-4 hidden max-w-xl flex-1 md:flex">
