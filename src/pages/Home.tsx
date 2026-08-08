@@ -29,6 +29,8 @@ import ProductCard, { type ProductCardData } from '@/components/product/ProductC
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { HUE_STYLES, type Hue } from '@/lib/theme';
+import { CATEGORIES } from '@/lib/categories';
+import { useCategoryCounts } from '@/hooks/useCategoryCounts';
 
 const HERO_SLIDES: HeroSlide[] = [
   {
@@ -68,24 +70,8 @@ const HERO_SLIDES: HeroSlide[] = [
   },
 ];
 
-/** The first 7 fill the homepage mosaic and each carries a photograph;
- *  the hue is the fallback tint and still drives the tile's accents. */
-const CATEGORIES: {
-  name: string;
-  icon: typeof Smartphone;
-  count: string;
-  hue: Hue;
-  image?: string;
-}[] = [
-  { name: 'Electronics', icon: Smartphone, count: '1,234 items', hue: 'blue', image: '/images/categories/electronics.jpg' },
-  { name: 'Computers', icon: Laptop, count: '856 items', hue: 'violet', image: '/images/categories/computers.jpg' },
-  { name: 'Audio', icon: Headphones, count: '432 items', hue: 'pink', image: '/images/categories/audio.jpg' },
-  { name: 'Watches', icon: Watch, count: '289 items', hue: 'amber', image: '/images/categories/watches.jpg' },
-  { name: 'Cameras', icon: Camera, count: '167 items', hue: 'teal', image: '/images/categories/cameras.jpg' },
-  { name: 'Gaming', icon: Gamepad2, count: '345 items', hue: 'lime', image: '/images/categories/gaming.jpg' },
-  { name: 'Fashion', icon: Shirt, count: '2,010 items', hue: 'rose', image: '/images/categories/fashion.jpg' },
-  { name: 'Home', icon: HomeIcon, count: '774 items', hue: 'orange' },
-];
+/** Categories come from the shared canonical list so the homepage, the
+ *  Categories page and the mega-menu can never disagree with the database. */
 
 const FEATURES: { title: string; body: string; icon: typeof Shield; hue: Hue }[] = [
   { title: 'Secure Payments', body: 'Your transactions are protected end to end', icon: Shield, hue: 'blue' },
@@ -128,6 +114,7 @@ interface FeaturedRow {
 const Home = () => {
   const [featured, setFeatured] = useState<ProductCardData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { label: categoryLabel } = useCategoryCounts();
 
   // The Featured grid was previously hard-coded to an empty array, so the
   // section always rendered blank. Pull the real top-rated products instead.
@@ -277,12 +264,12 @@ const Home = () => {
           {/* Mosaic: the lead tile spans two rows, so exactly 7 tiles fill the
               4-column block without leaving an orphan on a third row. */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {CATEGORIES.slice(0, 7).map(({ name, icon, count, image }, i) => (
+            {CATEGORIES.slice(0, 7).map(({ name, icon, image }, i) => (
               <CategoryTile
                 key={name}
                 name={name}
                 icon={icon}
-                count={count}
+                count={categoryLabel(name)}
                 image={image}
                 index={i}
                 size={i === 0 ? 'tall' : 'default'}

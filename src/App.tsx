@@ -29,6 +29,8 @@ import Fees from "./pages/Fees";
 import SellerSupport from "./pages/SellerSupport";
 import SellerPolicies from "./pages/SellerPolicies";
 import NotFound from "./pages/NotFound";
+import ForgotPassword from "./pages/ForgotPassword";
+import { Privacy, Terms, Cookies } from "./pages/Legal";
 
 const queryClient = new QueryClient();
 
@@ -126,6 +128,22 @@ const router = createBrowserRouter(
     {
       path: "/seller-policies",
       element: <SellerPolicies />,
+    },
+    {
+      path: "/forgot-password",
+      element: <ForgotPassword />,
+    },
+    {
+      path: "/privacy",
+      element: <Privacy />,
+    },
+    {
+      path: "/terms",
+      element: <Terms />,
+    },
+    {
+      path: "/cookies",
+      element: <Cookies />,
     },
     {
       path: "*",

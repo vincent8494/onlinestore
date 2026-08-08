@@ -7,7 +7,7 @@ import ProductCard from '@/components/product/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Grid, List, PackageSearch, ShoppingBag } from 'lucide-react';
+import { Search, Grid, List, PackageSearch, ShoppingBag, Store, X } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useWishlist } from '@/hooks/useWishlist';
 import { supabase } from '@/lib/supabase';
@@ -24,6 +24,21 @@ interface Product {
   review_count: number;
   category: string;
   image: string;
+  seller: string | null;
+}
+
+/** Row shape returned by the product list query. */
+interface ProductRow {
+  id: string;
+  seller_id: string | null;
+  name: string;
+  price: number;
+  original_price: number | null;
+  stock_quantity: number;
+  average_rating: number | null;
+  review_count: number | null;
+  categories: { name: string } | null;
+  product_images: { image_url: string; is_primary: boolean; display_order: number }[] | null;
 }
 
 const Products = () => {
@@ -48,20 +63,53 @@ const Products = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchProducts = async () => {
       setLoading(true);
+
       const { data } = await supabase
         .from('products')
         .select(`
-          id, name, price, original_price, stock_quantity, average_rating, review_count,
+          id, seller_id, name, price, original_price, stock_quantity, average_rating, review_count,
           categories(name),
           product_images(image_url, is_primary, display_order)
         `)
         .eq('status', 'active');
 
+      if (cancelled) return;
+
       if (data) {
+        const rows = data as unknown as ProductRow[];
+
+        // Store names live on seller_profiles, which products has no direct
+        // foreign key to (products.seller_id -> users.id). Fetched separately
+        // and joined here so a failure costs us the seller label, not the grid.
+        const sellerIds = Array.from(
+          new Set(rows.map(r => r.seller_id).filter((v): v is string => Boolean(v)))
+        );
+
+        let storeNames: Record<string, string> = {};
+        if (sellerIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('seller_profiles')
+            .select('user_id, store_name')
+            .in('user_id', sellerIds);
+
+          if (profiles) {
+            storeNames = Object.fromEntries(
+              (profiles as { user_id: string; store_name: string }[]).map(p => [
+                p.user_id,
+                p.store_name,
+              ])
+            );
+          }
+        }
+
+        if (cancelled) return;
+
         setProducts(
-          (data as any[]).map(p => ({
+          rows.map(p => ({
             id: p.id,
             name: p.name,
             price: p.price,
@@ -70,16 +118,26 @@ const Products = () => {
             average_rating: p.average_rating ?? 0,
             review_count: p.review_count ?? 0,
             category: p.categories?.name ?? 'Uncategorized',
+            seller: p.seller_id ? storeNames[p.seller_id] ?? null : null,
             image:
-              (p.product_images as { image_url: string; is_primary: boolean; display_order: number }[])
-                ?.sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
-                ?.[0]?.image_url ?? '/placeholder.svg',
+              [...(p.product_images ?? [])].sort(
+                (a, b) =>
+                  (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) ||
+                  a.display_order - b.display_order
+              )[0]?.image_url ?? '/placeholder.svg',
           }))
         );
       }
       setLoading(false);
     };
-    fetchProducts();
+
+    fetchProducts().catch(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Include the active filter even when no loaded product carries it, so a
@@ -95,10 +153,14 @@ const Products = () => {
     ).sort(),
   ];
 
+  const sellerFilter = searchParams.get('seller');
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesSeller =
+      !sellerFilter || (product.seller ?? '').toLowerCase() === sellerFilter.toLowerCase();
+    return matchesSearch && matchesCategory && matchesSeller;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -124,12 +186,16 @@ const Products = () => {
 
   /** Writes a filter change back to the URL; the effect above mirrors it into
    *  state. Keeps the view shareable and the Back button meaningful. */
-  const updateParams = (next: { search?: string; category?: string }) => {
+  const updateParams = (next: { search?: string; category?: string; seller?: string | null }) => {
     const params: Record<string, string> = {};
     const search = next.search ?? searchTerm;
     const category = next.category ?? categoryFilter;
+    // Carried through unless explicitly cleared, so changing category does not
+    // silently drop the seller you were browsing.
+    const seller = next.seller === undefined ? sellerFilter : next.seller;
     if (search) params.search = search;
     if (category && category !== 'all') params.category = category;
+    if (seller) params.seller = seller;
     setSearchParams(params);
   };
 
@@ -252,6 +318,24 @@ const Products = () => {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Active seller filter — dismissible, so browsing one store is visible
+          and escapable rather than a silent narrowing of the results. */}
+      {sellerFilter && (
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">Store:</span>
+          <button
+            type="button"
+            onClick={() => updateParams({ seller: null })}
+            className="group inline-flex items-center gap-2 rounded-full bg-ink px-4 py-1.5 text-sm font-bold text-gold transition-colors hover:bg-ink-soft"
+            aria-label={`Clear the ${sellerFilter} store filter`}
+          >
+            <Store className="h-3.5 w-3.5" />
+            {sellerFilter}
+            <X className="h-3.5 w-3.5 opacity-60 transition-opacity group-hover:opacity-100" />
+          </button>
         </div>
       )}
 

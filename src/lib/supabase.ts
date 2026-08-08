@@ -1,9 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://bzeptsuqpjtgrekinoro.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6ZXB0c3VxcGp0Z3Jla2lub3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NDIzOTYsImV4cCI6MjA5ODExODM5Nn0.rYNJtSbyGz9v-efJefh0qO1wqsNvAAmxZ5dUNs5yy10';
+/**
+ * Configuration comes from the environment, with a fallback to the project's
+ * published values.
+ *
+ * The fallback is deliberate: `.env.local` is gitignored, so a build running
+ * anywhere the variables have not been configured (Vercel, a fresh clone, CI)
+ * would otherwise construct the client with `undefined` and every request on
+ * the site would fail. The publishable key is designed to ship in a browser
+ * bundle — row level security is what guards the data, not secrecy of this
+ * string — so committing it as a default costs nothing.
+ */
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ?? 'https://bzeptsuqpjtgrekinoro.supabase.co';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  'sb_publishable_9Ih0Ipt6cudyct7LjwAuzA_jGAQ-dV6';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 export type Database = {
   public: {

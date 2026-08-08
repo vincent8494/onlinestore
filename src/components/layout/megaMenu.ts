@@ -1,4 +1,5 @@
 import type { Hue } from '@/lib/theme';
+import { CATEGORIES, categoryHref } from '@/lib/categories';
 
 export interface MegaColumn {
   heading: string;
@@ -15,8 +16,6 @@ export interface NavItem {
   promo?: { title: string; body: string; cta: string; to: string };
 }
 
-const cat = (name: string) => `/products?category=${encodeURIComponent(name)}`;
-
 /**
  * Navigation model for the header. Kept out of the component so the desktop
  * mega-menu and the mobile accordion render from one source.
@@ -26,35 +25,15 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Categories',
     to: '/categories',
     hue: 'blue',
-    columns: [
-      {
-        heading: 'Tech',
-        links: [
-          { label: 'Electronics', to: cat('Electronics') },
-          { label: 'Computers', to: cat('Computers') },
-          { label: 'Audio', to: cat('Audio') },
-          { label: 'Cameras', to: cat('Cameras') },
-        ],
-      },
-      {
-        heading: 'Lifestyle',
-        links: [
-          { label: 'Fashion', to: cat('Fashion') },
-          { label: 'Watches', to: cat('Watches') },
-          { label: 'Beauty & Personal Care', to: cat('Beauty & Personal Care') },
-          { label: 'Sports & Outdoors', to: cat('Sports & Outdoors') },
-        ],
-      },
-      {
-        heading: 'Home',
-        links: [
-          { label: 'Home & Kitchen', to: cat('Home & Kitchen') },
-          { label: 'Home & Garden', to: cat('Home & Garden') },
-          { label: 'Groceries', to: cat('Groceries') },
-          { label: 'Automotive', to: cat('Automotive') },
-        ],
-      },
-    ],
+    // Derived from the canonical list and split into three balanced columns,
+    // so the menu always matches the categories that actually exist.
+    columns: [0, 1, 2].map(col => ({
+      heading: col === 0 ? 'Shop' : '\u00A0',
+      links: CATEGORIES.filter((_, i) => i % 3 === col).map(c => ({
+        label: c.name,
+        to: categoryHref(c.name),
+      })),
+    })),
     promo: {
       title: 'Shop all categories',
       body: 'Browse every department in one place.',
@@ -78,9 +57,9 @@ export const NAV_ITEMS: NavItem[] = [
       {
         heading: 'Popular',
         links: [
-          { label: 'Deals in Electronics', to: cat('Electronics') },
-          { label: 'Deals in Fashion', to: cat('Fashion') },
-          { label: 'Deals in Home', to: cat('Home & Kitchen') },
+          { label: 'Deals in Electronics', to: categoryHref('Electronics') },
+          { label: 'Deals in Fashion', to: categoryHref('Fashion') },
+          { label: 'Deals in Home', to: categoryHref('Home & Garden') },
         ],
       },
     ],

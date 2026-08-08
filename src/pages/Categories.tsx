@@ -4,95 +4,19 @@ import { Link } from 'react-router-dom';
 import PageShell from '@/components/layout/PageShell';
 import PageHero from '@/components/layout/PageHero';
 import { Input } from '@/components/ui/input';
-import {
-  Search,
-  Grid,
-  List,
-  LayoutGrid,
-  ArrowRight,
-  Smartphone,
-  Shirt,
-  Sparkles,
-  ShoppingBasket,
-  ChefHat,
-  Sofa,
-  Dumbbell,
-  BookOpen,
-  Car,
-} from 'lucide-react';
+import { Search, Grid, List, LayoutGrid, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CATEGORIES, categoryHref } from '@/lib/categories';
+import { useCategoryCounts } from '@/hooks/useCategoryCounts';
 import { categoryStyle } from '@/lib/theme';
 
 const Categories = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'popularity'>('name');
+  const { label: categoryLabel } = useCategoryCounts();
+  const categories = CATEGORIES;
 
-  const categories = [
-    {
-      id: 1,
-      name: 'Electronics',
-      description: 'Phones, laptops, gadgets, and more',
-      icon: Smartphone,
-      count: '1,234 items',
-    },
-    {
-      id: 2,
-      name: 'Fashion',
-      description: 'Clothing, shoes, and accessories',
-      icon: Shirt,
-      count: '2,010 items',
-    },
-    {
-      id: 7,
-      name: 'Beauty & Personal Care',
-      description: 'Skincare, haircare, and grooming essentials',
-      icon: Sparkles,
-      count: '689 items',
-    },
-    {
-      id: 8,
-      name: 'Groceries',
-      description: 'Fresh food, pantry staples, and household essentials',
-      icon: ShoppingBasket,
-      count: '1,470 items',
-    },
-    {
-      id: 9,
-      name: 'Home & Kitchen',
-      description: 'Appliances, cookware, and home essentials',
-      icon: ChefHat,
-      count: '953 items',
-    },
-    {
-      id: 3,
-      name: 'Home & Garden',
-      description: 'Furniture, decor, and garden supplies',
-      icon: Sofa,
-      count: '774 items',
-    },
-    {
-      id: 4,
-      name: 'Sports & Outdoors',
-      description: 'Equipment, gear, and outdoor activities',
-      icon: Dumbbell,
-      count: '512 items',
-    },
-    {
-      id: 5,
-      name: 'Books & Media',
-      description: 'Books, movies, music, and games',
-      icon: BookOpen,
-      count: '1,846 items',
-    },
-    {
-      id: 6,
-      name: 'Automotive',
-      description: 'Cars, parts, and accessories',
-      icon: Car,
-      count: '327 items',
-    }
-  ];
 
   const filteredAndSortedCategories = categories
     .filter(category =>
@@ -171,8 +95,8 @@ const Categories = () => {
           const Icon = category.icon;
           return (
             <Link
-              key={category.id}
-              to={`/products?category=${encodeURIComponent(category.name)}`}
+              key={category.name}
+              to={categoryHref(category.name)}
               className={cn(
                 'card-pop ring-gradient group animate-fade-up overflow-hidden',
                 style.tint,
@@ -201,7 +125,7 @@ const Categories = () => {
                 <p className="mb-3 text-sm text-muted-foreground">{category.description}</p>
                 <div className="flex items-center justify-between gap-3">
                   <span className={cn('text-xs font-bold uppercase tracking-wider', style.text)}>
-                    {category.count}
+                    {categoryLabel(category.name)}
                   </span>
                   <span
                     className={cn(
