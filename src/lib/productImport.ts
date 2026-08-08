@@ -17,6 +17,7 @@ export interface ParsedRow {
   status: RowStatus;
   /** Why it was rejected, or why it is considered a duplicate. */
   issues: string[];
+  sku: string | null;
   name: string;
   description: string | null;
   price: number;
@@ -44,6 +45,7 @@ const VALID_STATUSES: ProductStatus[] = [
  * "NAME" all resolve to the same field.
  */
 const COLUMN_ALIASES: Record<string, string[]> = {
+  sku: ['sku', 'skucode', 'productcode', 'itemcode', 'partnumber', 'mpn', 'barcode'],
   name: ['name', 'productname', 'product', 'title'],
   description: ['description', 'desc', 'details'],
   price: ['price', 'sellingprice', 'amount'],
@@ -56,6 +58,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
 
 /** The header row written into the downloadable template. */
 export const TEMPLATE_COLUMNS = [
+  'sku',
   'name',
   'description',
   'price',
@@ -70,6 +73,21 @@ const normaliseHeader = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, '')
 
 /** Comparison key for duplicate detection: case and spacing insensitive. */
 export const productKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ');
+
+/**
+ * SKUs are compared case-insensitively with surrounding space removed, so
+ * "abc-123", "ABC-123 " and " Abc-123" are one product. Internal punctuation is
+ * preserved — "ABC-123" and "ABC123" are different codes and must not merge.
+ */
+export const skuKey = (sku: string) => sku.trim().toLowerCase();
+
+/**
+ * The key a row is deduplicated on. SKU wins when present; rows without one
+ * fall back to the product name so they are still protected rather than
+ * silently duplicating.
+ */
+export const dedupeKey = (row: { sku: string | null; name: string }) =>
+  row.sku ? `sku:${skuKey(row.sku)}` : `name:${productKey(row.name)}`;
 
 /**
  * Excel cells can arrive as numbers, strings, formula results or rich text.
@@ -233,7 +251,10 @@ function mapColumns(headers: string[]) {
 export interface ValidateOptions {
   /** Category name -> id, from the database. */
   categories: Map<string, string>;
-  /** Normalised names the seller already has listed. */
+  /**
+   * Dedupe keys the seller already has listed, as produced by `dedupeKey` —
+   * `sku:...` for products with a SKU, `name:...` for those without.
+   */
   existingKeys: Set<string>;
   /** Applied when the sheet has no status column. */
   defaultStatus: ProductStatus;
@@ -262,6 +283,7 @@ export function validateRows(sheet: RawSheet, opts: ValidateOptions): Validation
     const issues: string[] = [];
     const get = (field: string) => (cols[field] ? cells[cols[field] as string] ?? '' : '');
 
+    const sku = get('sku');
     const name = get('name');
     const description = get('description');
     const priceRaw = get('price');
@@ -273,6 +295,8 @@ export function validateRows(sheet: RawSheet, opts: ValidateOptions): Validation
 
     if (!name) issues.push('Name is required');
     else if (name.length > 200) issues.push('Name is longer than 200 characters');
+
+    if (sku && sku.length > 64) issues.push('SKU is longer than 64 characters');
 
     const price = parseMoney(priceRaw);
     if (price === null) issues.push(`Price "${priceRaw}" is not a number`);
@@ -315,16 +339,25 @@ export function validateRows(sheet: RawSheet, opts: ValidateOptions): Validation
       issues.push('Image URL must start with http://, https:// or /');
     }
 
-    const key = productKey(name);
+    const key = dedupeKey({ sku: sku || null, name });
+    const bySku = Boolean(sku);
     let status: RowStatus = 'ready';
     if (issues.length > 0) {
       status = 'invalid';
     } else if (opts.existingKeys.has(key)) {
       status = 'duplicate';
-      issues.push('You already have a product with this name — it will be skipped');
+      issues.push(
+        bySku
+          ? `You already have a product with SKU "${sku}" — it will be skipped`
+          : 'You already have a product with this name — it will be skipped'
+      );
     } else if (seenInFile.has(key)) {
       status = 'duplicate';
-      issues.push('This name appears earlier in the file — only the first is imported');
+      issues.push(
+        bySku
+          ? `SKU "${sku}" appears earlier in the file — only the first is imported`
+          : 'This name appears earlier in the file — only the first is imported'
+      );
     }
 
     if (status === 'ready') seenInFile.add(key);
@@ -333,6 +366,7 @@ export function validateRows(sheet: RawSheet, opts: ValidateOptions): Validation
       rowNumber,
       status,
       issues,
+      sku: sku || null,
       name,
       description: description || null,
       price: price ?? 0,
@@ -364,11 +398,12 @@ export async function buildTemplate(categoryNames: string[]): Promise<Blob> {
   ws.columns = TEMPLATE_COLUMNS.map(key => ({
     header: key,
     key,
-    width: key === 'description' ? 46 : key === 'image_url' ? 40 : 20,
+    width: key === 'description' ? 46 : key === 'image_url' ? 40 : key === 'sku' ? 22 : 20,
   }));
   ws.getRow(1).font = { bold: true };
 
   ws.addRow({
+    sku: 'VMK-EARB-001',
     name: 'Wireless Earbuds',
     description: 'Bluetooth 5.3 earbuds with charging case',
     price: 59.99,
@@ -379,6 +414,7 @@ export async function buildTemplate(categoryNames: string[]): Promise<Blob> {
     status: 'active',
   });
   ws.addRow({
+    sku: 'VMK-TSHIRT-BLK-M',
     name: 'Cotton T-Shirt',
     description: 'Regular fit, 100% cotton',
     price: 15,

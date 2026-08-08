@@ -25,7 +25,7 @@ import {
   readWorkbook,
   validateRows,
   buildTemplate,
-  productKey,
+  dedupeKey,
   type ParsedRow,
   type ValidationResult,
   type RawSheet,
@@ -47,6 +47,7 @@ const ImportProducts = () => {
   const [categories, setCategories] = useState<Map<string, string>>(new Map());
   const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [existingKeys, setExistingKeys] = useState<Set<string>>(new Set());
+  const [skuReady, setSkuReady] = useState(true);
   const [loadingContext, setLoadingContext] = useState(true);
 
   const [fileName, setFileName] = useState<string | null>(null);
@@ -70,9 +71,9 @@ const ImportProducts = () => {
         return;
       }
 
-      const [{ data: cats }, { data: mine }] = await Promise.all([
+      const [{ data: cats }, { data: mine, error: mineError }] = await Promise.all([
         supabase.from('categories').select('id, name').order('name'),
-        supabase.from('products').select('name').eq('seller_id', user.id),
+        supabase.from('products').select('sku, name').eq('seller_id', user.id),
       ]);
 
       if (cancelled) return;
@@ -80,9 +81,31 @@ const ImportProducts = () => {
       const rows = (cats ?? []) as { id: string; name: string }[];
       setCategories(new Map(rows.map(c => [c.name.toLowerCase(), c.id])));
       setCategoryNames(rows.map(c => c.name));
-      setExistingKeys(
-        new Set(((mine ?? []) as { name: string }[]).map(p => productKey(p.name)))
-      );
+
+      // Selecting `sku` fails while the column is missing, which is how we
+      // detect that scripts/add-product-sku.sql has not been run yet.
+      if (mineError) {
+        setSkuReady(false);
+        const { data: fallback } = await supabase
+          .from('products')
+          .select('name')
+          .eq('seller_id', user.id);
+        setExistingKeys(
+          new Set(
+            ((fallback ?? []) as { name: string }[]).map(p =>
+              dedupeKey({ sku: null, name: p.name })
+            )
+          )
+        );
+      } else {
+        setExistingKeys(
+          new Set(
+            ((mine ?? []) as { sku: string | null; name: string }[]).map(p =>
+              dedupeKey({ sku: p.sku, name: p.name })
+            )
+          )
+        );
+      }
       setLoadingContext(false);
     };
 
@@ -145,6 +168,7 @@ const ImportProducts = () => {
     try {
       const payload = ready.map(r => ({
         seller_id: user.id,
+        ...(skuReady ? { sku: r.sku } : {}),
         category_id: r.categoryId,
         name: r.name,
         description: r.description,
@@ -154,21 +178,29 @@ const ImportProducts = () => {
         status: r.status_value,
       }));
 
-      const { data: inserted, error } = await supabase
-        .from('products')
-        .insert(payload)
-        .select('id, name');
+      // The preview's duplicate check is a snapshot; two tabs or a retried
+      // request could both pass it. Where the SKU index exists, let the
+      // database be the authority: ON CONFLICT DO NOTHING means a duplicate is
+      // impossible rather than merely unlikely. Only rows that actually landed
+      // come back in `inserted`.
+      const query = skuReady
+        ? supabase
+            .from('products')
+            .upsert(payload, { onConflict: 'seller_id,sku', ignoreDuplicates: true })
+        : supabase.from('products').insert(payload);
+
+      const { data: inserted, error } = await query.select('id, sku, name');
 
       if (error) throw error;
 
       // Attach images for the rows that carried one. Done after the products
       // land so each image can be tied to its new product id.
-      const created = (inserted ?? []) as { id: string; name: string }[];
-      const byKey = new Map(created.map(p => [productKey(p.name), p.id]));
+      const created = (inserted ?? []) as { id: string; sku: string | null; name: string }[];
+      const byKey = new Map(created.map(p => [dedupeKey({ sku: p.sku ?? null, name: p.name }), p.id]));
       const images = ready
-        .filter(r => r.imageUrl && byKey.has(productKey(r.name)))
+        .filter(r => r.imageUrl && byKey.has(dedupeKey(r)))
         .map(r => ({
-          product_id: byKey.get(productKey(r.name)) as string,
+          product_id: byKey.get(dedupeKey(r)) as string,
           image_url: r.imageUrl as string,
           is_primary: true,
           display_order: 0,
@@ -191,7 +223,7 @@ const ImportProducts = () => {
       // them as duplicates without needing a page reload.
       setExistingKeys(prev => {
         const next = new Set(prev);
-        ready.forEach(r => next.add(productKey(r.name)));
+        ready.forEach(r => next.add(dedupeKey(r)));
         return next;
       });
       setImported(created.length);
@@ -267,6 +299,20 @@ const ImportProducts = () => {
           </div>
         </div>
       </div>
+
+      {!loadingContext && !skuReady && (
+        <div className="mb-6 rounded-lg border-2 border-brand-amber/40 bg-brand-amber/10 p-5 animate-fade-up">
+          <p className="flex items-center gap-2 font-bold text-brand-amber">
+            <AlertTriangle className="h-4 w-4" />
+            SKU column not found — falling back to name matching
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Run <code className="font-mono">scripts/add-product-sku.sql</code> in the Supabase
+            SQL editor to enable SKU-based duplicate detection and the database-level
+            uniqueness guarantee. Import still works meanwhile, matching on product name.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -386,6 +432,7 @@ const ImportProducts = () => {
                   <thead className="sticky top-0 bg-muted text-2xs uppercase tracking-wider">
                     <tr>
                       <th className="p-3 font-bold">Row</th>
+                      <th className="p-3 font-bold">SKU</th>
                       <th className="p-3 font-bold">Product</th>
                       <th className="p-3 font-bold">Price</th>
                       <th className="p-3 font-bold">Stock</th>
@@ -507,6 +554,9 @@ const ImportRow = ({ row }: { row: ParsedRow }) => {
   return (
     <tr className={cn('border-t align-top', tone.tint)}>
       <td className="p-3 text-muted-foreground">{row.rowNumber}</td>
+      <td className="p-3 font-mono text-xs">
+        {row.sku ?? <span className="text-muted-foreground">—</span>}
+      </td>
       <td className="p-3">
         <div className="flex items-center gap-2">
           <Icon
