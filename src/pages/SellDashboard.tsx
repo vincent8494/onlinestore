@@ -16,6 +16,7 @@ import {
   Settings as SettingsIcon,
   Pencil,
   LogIn,
+  FileSpreadsheet,
 } from 'lucide-react';
 import PageShell from '@/components/layout/PageShell';
 import SectionCard from '@/components/layout/SectionCard';
@@ -177,12 +178,20 @@ const SellDashboard = () => {
             <p className="text-muted-foreground">Manage your products and track your sales</p>
           </div>
         </div>
-        <Button size="lg" asChild>
-          <Link to="/sell/new-product">
-            <Plus className="h-5 w-5" />
-            Add New Product
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="lg" asChild>
+            <Link to="/sell/import">
+              <FileSpreadsheet className="h-5 w-5" />
+              Bulk Import
+            </Link>
+          </Button>
+          <Button size="lg" asChild>
+            <Link to="/sell/new-product">
+              <Plus className="h-5 w-5" />
+              Add New Product
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

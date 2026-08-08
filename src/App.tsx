@@ -1,4 +1,5 @@
 
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SellDashboard from "./pages/SellDashboard";
 import NewProduct from "./pages/NewProduct";
+
 import Products from "./pages/Products";
 import Categories from "./pages/Categories";
 import Deals from "./pages/Deals";
@@ -32,6 +34,16 @@ import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
 import { Privacy, Terms, Cookies } from "./pages/Legal";
 
+// exceljs is close to a megabyte and is only needed by the bulk importer, so
+// this route is split out rather than shipped to every visitor.
+const ImportProducts = lazy(() => import("./pages/ImportProducts"));
+
+const RouteFallback = () => (
+  <div className="flex min-h-screen items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-gold" />
+  </div>
+);
+
 const queryClient = new QueryClient();
 
 // Create router with type assertion for future flags
@@ -52,6 +64,14 @@ const router = createBrowserRouter(
     {
       path: "/sell",
       element: <SellDashboard />,
+    },
+    {
+      path: "/sell/import",
+      element: (
+        <Suspense fallback={<RouteFallback />}>
+          <ImportProducts />
+        </Suspense>
+      ),
     },
     {
       path: "/sell/new-product",
