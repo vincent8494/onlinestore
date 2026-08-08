@@ -1,4 +1,16 @@
 import ExcelJS from 'exceljs';
+import {
+  VALID_STATUSES,
+  parseMoney,
+  parseCount,
+  validateProductFields,
+  productKey,
+  skuKey,
+  dedupeKey,
+  type ProductStatus,
+} from '@/lib/productRules';
+
+export { productKey, skuKey, dedupeKey, type ProductStatus };
 
 /**
  * Bulk product import: spreadsheet -> validated rows.
@@ -29,15 +41,7 @@ export interface ParsedRow {
   status_value: ProductStatus;
 }
 
-export type ProductStatus = 'active' | 'pending' | 'out_of_stock' | 'draft' | 'archived';
 
-const VALID_STATUSES: ProductStatus[] = [
-  'active',
-  'pending',
-  'out_of_stock',
-  'draft',
-  'archived',
-];
 
 /**
  * Accepted spellings for each column. Headers are matched case-insensitively
@@ -71,23 +75,8 @@ export const TEMPLATE_COLUMNS = [
 
 const normaliseHeader = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-/** Comparison key for duplicate detection: case and spacing insensitive. */
-export const productKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
-/**
- * SKUs are compared case-insensitively with surrounding space removed, so
- * "abc-123", "ABC-123 " and " Abc-123" are one product. Internal punctuation is
- * preserved — "ABC-123" and "ABC123" are different codes and must not merge.
- */
-export const skuKey = (sku: string) => sku.trim().toLowerCase();
 
-/**
- * The key a row is deduplicated on. SKU wins when present; rows without one
- * fall back to the product name so they are still protected rather than
- * silently duplicating.
- */
-export const dedupeKey = (row: { sku: string | null; name: string }) =>
-  row.sku ? `sku:${skuKey(row.sku)}` : `name:${productKey(row.name)}`;
 
 /**
  * Excel cells can arrive as numbers, strings, formula results or rich text.
@@ -113,39 +102,7 @@ function cellText(value: ExcelJS.CellValue): string {
   return String(value).trim();
 }
 
-/**
- * Money parser. Tolerates currency symbols, thousands separators and stray
- * spaces, but refuses anything that is not cleanly a number — a silently
- * mis-read price is exactly the sort of mistake this import must not make.
- */
-function parseMoney(raw: string): number | null {
-  if (!raw) return null;
-  const cleaned = raw.replace(/[^0-9.-]/g, '');
-  if (cleaned === '' || cleaned === '-' || cleaned === '.') return null;
-  // Reject multiple decimal points or embedded minus signs.
-  if ((cleaned.match(/\./g) ?? []).length > 1) return null;
-  if (cleaned.lastIndexOf('-') > 0) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
-}
 
-/**
- * Whole-number parser for stock.
- *
- * The decimal point is deliberately preserved while cleaning. Stripping it
- * first turned "2.5" into "25" — a stock of two and a half silently became
- * twenty-five. Keep the point, parse, then reject anything non-integral.
- */
-function parseCount(raw: string): number | null {
-  if (!raw) return null;
-  const cleaned = raw.replace(/[^0-9.-]/g, '');
-  if (cleaned === '' || cleaned === '-' || cleaned === '.') return null;
-  if ((cleaned.match(/\./g) ?? []).length > 1) return null;
-  if (cleaned.lastIndexOf('-') > 0) return null;
-  const n = Number(cleaned);
-  if (!Number.isFinite(n)) return null;
-  return Number.isInteger(n) ? n : null;
-}
 
 export interface RawSheet {
   headers: string[];
@@ -293,31 +250,21 @@ export function validateRows(sheet: RawSheet, opts: ValidateOptions): Validation
     const imageUrl = get('imageUrl');
     const statusRaw = get('status').toLowerCase().replace(/\s+/g, '_');
 
-    if (!name) issues.push('Name is required');
-    else if (name.length > 200) issues.push('Name is longer than 200 characters');
-
-    if (sku && sku.length > 64) issues.push('SKU is longer than 64 characters');
-
+    // Turning cell text into values is the importer's own job, and its errors
+    // quote the offending text — a spreadsheet needs to point at the cell.
     const price = parseMoney(priceRaw);
-    if (price === null) issues.push(`Price "${priceRaw}" is not a number`);
-    else if (price < 0) issues.push('Price cannot be negative');
+    if (priceRaw && price === null) issues.push(`Price "${priceRaw}" is not a number`);
 
     const originalPrice = originalRaw ? parseMoney(originalRaw) : null;
     if (originalRaw && originalPrice === null) {
       issues.push(`Original price "${originalRaw}" is not a number`);
-    } else if (originalPrice !== null && price !== null && originalPrice <= price) {
-      // Not fatal, but it would render a nonsensical "discount".
-      issues.push('Original price must be higher than price to show as a discount');
     }
 
     const stock = parseCount(stockRaw);
-    if (stock === null) issues.push(`Stock "${stockRaw}" is not a whole number`);
-    else if (stock < 0) issues.push('Stock cannot be negative');
+    if (stockRaw && stock === null) issues.push(`Stock "${stockRaw}" is not a whole number`);
 
     let categoryId: string | null = null;
-    if (!categoryName) {
-      issues.push('Category is required');
-    } else {
+    if (categoryName) {
       categoryId = opts.categories.get(categoryName.trim().toLowerCase()) ?? null;
       if (!categoryId) {
         issues.push(
@@ -335,9 +282,19 @@ export function validateRows(sheet: RawSheet, opts: ValidateOptions): Validation
       }
     }
 
-    if (imageUrl && !/^(https?:\/\/|\/)/i.test(imageUrl)) {
-      issues.push('Image URL must start with http://, https:// or /');
-    }
+    // Everything else is a product rule, shared with the single-product forms
+    // so the two cannot disagree about what a valid product is.
+    issues.push(
+      ...validateProductFields({
+        sku: sku || null,
+        name,
+        price,
+        originalPrice,
+        stock,
+        categoryId,
+        imageUrl: imageUrl || null,
+      })
+    );
 
     const key = dedupeKey({ sku: sku || null, name });
     const bySku = Boolean(sku);
