@@ -277,3 +277,53 @@
 * {
   scrollbar-color: hsl(var(--gold-deep)) hsl(var(--muted));
 }
+
+/* ---------------------------------------------------------------------------
+ * Margravon build credit
+ *
+ * The wordmark rests in the surrounding text colour so it adapts to whatever
+ * footer it lands in; the blue appears only on hover, as colour and glow
+ * together. The hover pair is overridable per instance — this site's footer is
+ * charcoal regardless of theme, so it sets the dark-ground values inline.
+ * ------------------------------------------------------------------------- */
+:root {
+  --margravon-hover: #1668c9;
+  --margravon-glow: rgb(22 104 201 / 0.55);
+}
+
+.dark {
+  --margravon-hover: #4da3ff;
+  --margravon-glow: rgb(77 163 255 / 0.85);
+}
+
+.powered-by {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
+.margravon {
+  display: inline-block;
+  /* Scale from the left edge so the enlarged word grows rightward rather than
+     expanding back over the "by" beside it. */
+  transform-origin: left center;
+  padding: 0 0.08em;
+  font-weight: 600;
+  font-style: italic;
+  color: inherit;
+  transition: transform 0.25s ease, text-shadow 0.25s ease, color 0.25s ease;
+}
+
+/* The hover target is the word itself — hovering "Powered by" does nothing. */
+.margravon:hover {
+  transform: scale(1.14);
+  color: var(--margravon-hover);
+  text-shadow: 0 0 8px var(--margravon-glow), 0 0 20px var(--margravon-glow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .margravon { transition: none; }
+  .margravon:hover { transform: none; }
+}

@@ -210,9 +210,27 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="mt-8 border-t border-white/10 pt-8">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <p className="text-sm text-white/40">
-              © {new Date().getFullYear()} VMK Store. All rights reserved.
-            </p>
+            <div>
+              <p className="text-sm text-white/40">
+                © {new Date().getFullYear()} VMK Store. All rights reserved.
+              </p>
+              {/* This footer sits on charcoal whatever the site theme, so it
+                  carries the dark-ground hover values directly. */}
+              <p
+                /* Matches the copyright tone above it — the credit is meant to
+                   blend into the footer, and the footer's base white made it
+                   louder than the line it sits under. */
+                className="powered-by text-white/40"
+                style={
+                  {
+                    '--margravon-hover': '#4da3ff',
+                    '--margravon-glow': 'rgb(77 163 255 / 0.85)',
+                  } as React.CSSProperties
+                }
+              >
+                Powered by <span className="margravon">Margravon</span>
+              </p>
+            </div>
             <div className="flex gap-6 text-sm">
               <Link to="/privacy" className="text-white/40 transition-colors hover:text-gold">
                 Privacy Policy
