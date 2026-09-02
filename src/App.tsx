@@ -4,8 +4,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import CookieConsent from "@/components/legal/CookieConsent";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -46,9 +47,24 @@ const RouteFallback = () => (
 
 const queryClient = new QueryClient();
 
+/**
+ * Wraps every route. The cookie banner lives here rather than beside
+ * <RouterProvider> because it links to the cookie policy, and <Link> only
+ * works inside the router.
+ */
+const RootLayout = () => (
+  <>
+    <Outlet />
+    <CookieConsent />
+  </>
+);
+
 // Create router with type assertion for future flags
 const router = createBrowserRouter(
   [
+    {
+      element: <RootLayout />,
+      children: [
     {
       path: "/",
       element: <Home />,
@@ -168,6 +184,8 @@ const router = createBrowserRouter(
     {
       path: "*",
       element: <NotFound />,
+    },
+      ],
     },
   ],
   {
