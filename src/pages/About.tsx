@@ -4,16 +4,9 @@ import PageShell from '@/components/layout/PageShell';
 import SectionCard from '@/components/layout/SectionCard';
 import { Heart, Sparkles, ShieldCheck, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { HUE_STYLES, styleAt, type Hue } from '@/lib/theme';
+import { HUE_STYLES, type Hue } from '@/lib/theme';
 
 const About = () => {
-  const team = [
-    { name: 'John Smith', role: 'CEO & Founder', image: '/placeholder.svg' },
-    { name: 'Sarah Johnson', role: 'CTO', image: '/placeholder.svg' },
-    { name: 'Mike Chen', role: 'Head of Sales', image: '/placeholder.svg' },
-    { name: 'Lisa Davis', role: 'Customer Success', image: '/placeholder.svg' }
-  ];
-
   const values: { title: string; body: string; icon: typeof ShieldCheck; hue: Hue }[] = [
     {
       title: 'Trust & Safety',
@@ -79,43 +72,6 @@ const About = () => {
               className="h-64 w-full object-cover transition-transform duration-500 hover:scale-105"
             />
           </div>
-        </div>
-      </section>
-
-      {/* Team */}
-      <section className="mb-16">
-        <h2 className="mb-10 text-center text-4xl font-extrabold tracking-tight">
-          Meet Our{' '}
-          <span className="text-gold-ink">Team</span>
-        </h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {team.map((member, index) => {
-            const s = styleAt(index);
-            return (
-              <div
-                key={member.name}
-                className={cn(
-                  'card-pop ring-gradient group animate-fade-up p-6 text-center',
-                  s.tint,
-                  s.border,
-                  s.glow
-                )}
-                style={{ animationDelay: `${index * 70}ms` }}
-              >
-                <div className={cn('mx-auto mb-4 h-24 w-24 rounded-full p-1', s.gradient)}>
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="h-full w-full rounded-full bg-card object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <h3 className={cn('font-bold transition-colors', s.groupHoverText)}>
-                  {member.name}
-                </h3>
-                <p className="text-sm text-muted-foreground">{member.role}</p>
-              </div>
-            );
-          })}
         </div>
       </section>
 
