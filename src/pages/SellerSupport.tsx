@@ -59,28 +59,24 @@ const SellerSupport = () => {
     icon: typeof Book;
     title: string;
     description: string;
-    meta: string;
     hue: Hue;
   }[] = [
     {
       icon: Book,
       title: 'Knowledge Base',
       description: 'Browse our comprehensive help articles',
-      meta: '500+ articles',
       hue: 'teal',
     },
     {
       icon: Users,
       title: 'Community Forum',
       description: 'Connect with other sellers and share experiences',
-      meta: '10K+ members',
       hue: 'amber',
     },
     {
       icon: Clock,
       title: 'Video Tutorials',
       description: 'Watch step-by-step guides to master the platform',
-      meta: '50+ tutorials',
       hue: 'cyan',
     }
   ];
@@ -238,16 +234,7 @@ const SellerSupport = () => {
                   <Icon className="h-7 w-7" />
                 </div>
                 <h3 className="mb-1.5 font-bold">{resource.title}</h3>
-                <p className="mb-3 text-sm text-muted-foreground">{resource.description}</p>
-                <span
-                  className={cn(
-                    'mb-4 inline-block rounded-full px-3 py-1 text-xs font-bold',
-                    s.tint,
-                    s.text
-                  )}
-                >
-                  {resource.meta}
-                </span>
+                <p className="mb-4 text-sm text-muted-foreground">{resource.description}</p>
                 <Button variant="outline" className="w-full">
                   Browse Now
                 </Button>

@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, Settings, ShoppingBag, Heart, Star, Users, Loader2, BadgeCheck } from 'lucide-react';
+import { User, Settings, ShoppingBag, Heart, Users, Loader2, BadgeCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -101,26 +101,82 @@ const Profile = () => {
     }
   };
 
-  const [followedSellers, setFollowedSellers] = useState([
-    {
-      id: '1',
-      name: 'TechWorld Store',
-      avatar: '/placeholder.svg',
-      rating: 4.9,
-      followers: 12500,
-      verified: true,
-      storeSlug: 'techworld-store'
-    },
-    {
-      id: '2',
-      name: 'Fashion Hub',
-      avatar: '/placeholder.svg',
-      rating: 4.8,
-      followers: 8900,
-      verified: true,
-      storeSlug: 'fashion-hub'
+  /** A seller the signed-in user follows, as stored in seller_follows. */
+  interface FollowedSeller {
+    id: string;
+    name: string;
+    avatar: string;
+    verified: boolean;
+    followers: number;
+  }
+
+  const [followedSellers, setFollowedSellers] = useState<FollowedSeller[]>([]);
+
+  // These were hardcoded mock stores carrying invented ratings and follower
+  // counts. Read the real follows instead; the tab already has an empty state
+  // for the case where there are none.
+  useEffect(() => {
+    if (!user?.id) {
+      setFollowedSellers([]);
+      return;
     }
-  ]);
+    let cancelled = false;
+
+    const loadFollows = async () => {
+      const { data: follows } = await supabase
+        .from('seller_follows')
+        .select('seller_id')
+        .eq('follower_id', user.id);
+
+      if (cancelled) return;
+      const sellerIds = (follows ?? []).map((f: { seller_id: string }) => f.seller_id);
+      if (sellerIds.length === 0) {
+        setFollowedSellers([]);
+        return;
+      }
+
+      // seller_follows.seller_id and seller_profiles.user_id both point at
+      // users, so there is no direct relationship for PostgREST to embed —
+      // hence the second round trip.
+      const [{ data: profiles }, { data: allFollows }] = await Promise.all([
+        supabase
+          .from('seller_profiles')
+          .select('user_id, store_name, avatar_url, is_verified')
+          .in('user_id', sellerIds),
+        supabase.from('seller_follows').select('seller_id').in('seller_id', sellerIds),
+      ]);
+
+      if (cancelled || !profiles) return;
+
+      const followerCounts = new Map<string, number>();
+      for (const f of (allFollows ?? []) as { seller_id: string }[]) {
+        followerCounts.set(f.seller_id, (followerCounts.get(f.seller_id) ?? 0) + 1);
+      }
+
+      setFollowedSellers(
+        (profiles as {
+          user_id: string;
+          store_name: string;
+          avatar_url: string | null;
+          is_verified: boolean;
+        }[]).map((p) => ({
+          id: p.user_id,
+          name: p.store_name,
+          avatar: p.avatar_url ?? '/placeholder.svg',
+          verified: p.is_verified,
+          followers: followerCounts.get(p.user_id) ?? 0,
+        }))
+      );
+    };
+
+    loadFollows().catch(() => {
+      if (!cancelled) setFollowedSellers([]);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const handleViewStore = (storeName: string) => {
     // There is no /store/:slug route; the marketplace surfaces a seller's
@@ -128,12 +184,25 @@ const Profile = () => {
     navigate(`/products?seller=${encodeURIComponent(storeName)}`);
   };
 
-  const handleUnfollowSeller = (sellerId: string) => {
-    setFollowedSellers(prevSellers => 
-      prevSellers.filter(seller => seller.id !== sellerId)
-    );
-    
-    // In a real app, you would also update this in your database/backend
+  const handleUnfollowSeller = async (sellerId: string) => {
+    if (!user?.id) return;
+
+    const { error } = await supabase
+      .from('seller_follows')
+      .delete()
+      .eq('follower_id', user.id)
+      .eq('seller_id', sellerId);
+
+    if (error) {
+      toast({
+        title: 'Could not unfollow',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setFollowedSellers((prev) => prev.filter((seller) => seller.id !== sellerId));
     toast({
       title: 'Success',
       description: 'You have unfollowed this seller.',
@@ -344,10 +413,6 @@ const Profile = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-brand-amber text-brand-amber" />
-                                {seller.rating}
-                              </span>
                               <span className="flex items-center gap-1">
                                 <Users className="h-3 w-3" />
                                 {seller.followers.toLocaleString()}

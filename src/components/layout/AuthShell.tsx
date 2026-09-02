@@ -64,23 +64,6 @@ const AuthShell = ({ title, highlight, subtitle, children, footer }: AuthShellPr
           ))}
         </ul>
       </div>
-
-      <div className="relative p-12 pt-0">
-        <div className="flex items-center gap-6 text-white/70">
-          <div>
-            <div className="text-2xl font-extrabold text-white">50K+</div>
-            <div className="text-xs uppercase tracking-widest">Buyers</div>
-          </div>
-          <div>
-            <div className="text-2xl font-extrabold text-white">12K+</div>
-            <div className="text-xs uppercase tracking-widest">Sellers</div>
-          </div>
-          <div>
-            <div className="text-2xl font-extrabold text-white">4.8★</div>
-            <div className="text-xs uppercase tracking-widest">Rating</div>
-          </div>
-        </div>
-      </div>
     </div>
 
     {/* Form side */}

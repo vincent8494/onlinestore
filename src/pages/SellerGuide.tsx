@@ -39,7 +39,7 @@ const SellerGuide = () => {
   ];
 
   const benefits = [
-    'Reach thousands of potential customers',
+    'Your own storefront on the marketplace',
     'Low seller fees - only 5% commission',
     'Built-in payment processing',
     'Marketing and promotional tools',
@@ -161,23 +161,9 @@ const SellerGuide = () => {
                 <TrendingUp className="h-10 w-10" />
               </div>
               <h3 className="mb-2 text-3xl font-extrabold">Growing Marketplace</h3>
-              <p className="mb-8 text-white/80">
-                Join thousands of successful sellers who trust VMK Store
+              <p className="text-white/80">
+                List your products, reach buyers, and only pay when something sells
               </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-2xl bg-white/15 p-4 backdrop-blur-md">
-                  <div className="text-3xl font-extrabold">50K+</div>
-                  <div className="text-xs font-bold uppercase tracking-widest text-white/70">
-                    Active Buyers
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-white/15 p-4 backdrop-blur-md">
-                  <div className="text-3xl font-extrabold">1M+</div>
-                  <div className="text-xs font-bold uppercase tracking-widest text-white/70">
-                    Monthly Views
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

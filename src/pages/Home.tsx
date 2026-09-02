@@ -34,10 +34,10 @@ import { useCategoryCounts } from '@/hooks/useCategoryCounts';
 
 const HERO_SLIDES: HeroSlide[] = [
   {
-    eyebrow: 'Over 180,000 products',
+    eyebrow: 'Buy and sell in one place',
     title: 'Buy & sell with',
     highlight: 'Confidence',
-    body: 'Join thousands of buyers and sellers on VMK Store. Discover great products, or start your own business today.',
+    body: 'Buy from verified sellers, or open your own store and start selling today.',
     cta: 'Start shopping',
     to: '/products',
     surface: 'bg-brand-wash-animated',
@@ -61,7 +61,7 @@ const HERO_SLIDES: HeroSlide[] = [
     eyebrow: 'For sellers',
     title: 'Open your store',
     highlight: 'No listing fees',
-    body: 'Reach thousands of buyers from day one. You only pay a success fee when an item sells.',
+    body: 'List your products in minutes. You only pay a success fee when an item sells.',
     cta: 'Start selling',
     to: '/register',
     surface: 'bg-gradient-to-br from-ink via-[hsl(220_20%_22%)] to-ink',
@@ -78,13 +78,6 @@ const FEATURES: { title: string; body: string; icon: typeof Shield; hue: Hue }[]
   { title: 'Fast Shipping', body: 'Quick delivery, tracked worldwide', icon: Truck, hue: 'teal' },
   { title: 'Best Prices', body: 'Competitive marketplace rates, always', icon: TrendingUp, hue: 'amber' },
   { title: 'Easy Returns', body: 'Hassle-free returns within 30 days', icon: CreditCard, hue: 'pink' },
-];
-
-const STATS: { value: string; label: string; hue: Hue }[] = [
-  { value: '50K+', label: 'Happy buyers', hue: 'blue' },
-  { value: '12K+', label: 'Active sellers', hue: 'violet' },
-  { value: '180K+', label: 'Products listed', hue: 'pink' },
-  { value: '4.8★', label: 'Average rating', hue: 'amber' },
 ];
 
 /** Scrolling ticker strip under the hero. The threshold must match the one
@@ -189,31 +182,8 @@ const Home = () => {
           </div>
         </section>
 
-        {/* ---------- Stats ---------- */}
-        <section className="container mx-auto px-4 py-14">
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-4">
-            {STATS.map(({ value, label, hue }, i) => {
-              const style = HUE_STYLES[hue];
-              return (
-                <div
-                  key={label}
-                  className="group animate-fade-up bg-background p-6 text-center transition-colors hover:bg-muted"
-                  style={{ animationDelay: `${i * 70}ms` }}
-                >
-                  <div className={cn('text-4xl font-extrabold md:text-5xl', style.text)}>
-                    {value}
-                  </div>
-                  <div className="mt-1 text-2xs font-bold uppercase tracking-widest text-muted-foreground">
-                    {label}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
         {/* ---------- Features ---------- */}
-        <section className="container mx-auto px-4 pb-16">
+        <section className="container mx-auto px-4 py-16">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map(({ title, body, icon: Icon, hue }, i) => {
               const style = HUE_STYLES[hue];
@@ -381,8 +351,8 @@ const Home = () => {
                 Ready to start <span className="text-gold">selling?</span>
               </h2>
               <p className="mb-8 text-lg text-white/75">
-                Join our community of successful sellers and reach thousands of potential
-                customers. No listing fees — just success fees on sales.
+                Open your store, list your products and put them in front of buyers.
+                No listing fees — just success fees on sales.
               </p>
               <Button size="xl" asChild>
                 <Link to="/register">

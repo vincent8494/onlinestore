@@ -2,18 +2,11 @@
 import React from 'react';
 import PageShell from '@/components/layout/PageShell';
 import SectionCard from '@/components/layout/SectionCard';
-import { Users, Target, Award, Globe, Heart, Sparkles, ShieldCheck, Lightbulb } from 'lucide-react';
+import { Heart, Sparkles, ShieldCheck, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HUE_STYLES, styleAt, type Hue } from '@/lib/theme';
 
 const About = () => {
-  const stats: { icon: typeof Users; label: string; value: string; hue: Hue }[] = [
-    { icon: Users, label: 'Active Users', value: '50K+', hue: 'blue' },
-    { icon: Target, label: 'Products Sold', value: '1M+', hue: 'violet' },
-    { icon: Award, label: 'Verified Sellers', value: '5K+', hue: 'pink' },
-    { icon: Globe, label: 'Countries', value: '25+', hue: 'amber' }
-  ];
-
   const team = [
     { name: 'John Smith', role: 'CEO & Founder', image: '/placeholder.svg' },
     { name: 'Sarah Johnson', role: 'CTO', image: '/placeholder.svg' },
@@ -48,7 +41,7 @@ const About = () => {
       <section className="mb-16 text-center animate-fade-up">
         <span className="eyebrow mb-5 bg-brand-violet/10 text-brand-violet">
           <Sparkles className="h-3.5 w-3.5" />
-          Trusted by thousands worldwide
+          A marketplace for buyers and sellers
         </span>
         <h1 className="mb-5 text-5xl font-extrabold tracking-tight md:text-6xl">
           About{' '}
@@ -59,37 +52,6 @@ const About = () => {
           can connect, trade, and grow their businesses with confidence.
         </p>
       </section>
-
-      {/* Stats */}
-      <div className="mb-16 grid grid-cols-2 gap-5 md:grid-cols-4">
-        {stats.map((stat, index) => {
-          const s = HUE_STYLES[stat.hue];
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.label}
-              className={cn(
-                'card-pop ring-gradient group animate-fade-up p-6 text-center',
-                s.tint,
-                s.border,
-                s.glow
-              )}
-              style={{ animationDelay: `${index * 70}ms` }}
-            >
-              <div
-                className={cn(
-                  'mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lift-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6',
-                  s.gradient
-                )}
-              >
-                <Icon className="h-6 w-6" />
-              </div>
-              <div className={cn('text-3xl font-extrabold md:text-4xl', s.text)}>{stat.value}</div>
-              <div className="text-sm font-medium text-muted-foreground">{stat.label}</div>
-            </div>
-          );
-        })}
-      </div>
 
       {/* Mission */}
       <section className="mb-16 grid items-center gap-8 md:grid-cols-2">
