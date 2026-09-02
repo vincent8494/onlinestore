@@ -97,8 +97,6 @@ interface LegalDocumentProps {
   highlight: string;
   icon: typeof FileText;
   hue: Hue;
-  /** One-paragraph plain-language summary. Not a substitute for the text. */
-  summary: React.ReactNode;
   sections: Section[];
 }
 
@@ -108,7 +106,6 @@ const LegalDocument = ({
   highlight,
   icon: Icon,
   hue,
-  summary,
   sections,
 }: LegalDocumentProps) => {
   const style = HUE_STYLES[hue];
@@ -125,40 +122,8 @@ const LegalDocument = ({
       />
 
       <div className="mx-auto max-w-3xl">
-        {/* Summary */}
-        <div className={cn('mb-8 rounded-lg border-l-4 p-5', style.tint, style.border)}>
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide">In short</h2>
-          <div className="text-[0.9375rem] leading-7 text-muted-foreground">{summary}</div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            This summary is for orientation only. The numbered sections below are the
-            document.
-          </p>
-        </div>
-
-        {/* Contents */}
-        <nav aria-label="Contents" className="mb-10 rounded-lg border border-border p-5">
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide">Contents</h2>
-          <ol className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
-            {sections.map((s, i) => (
-              <li key={s.id} className="text-sm">
-                <a
-                  href={`#${s.id}`}
-                  className={cn(
-                    'text-muted-foreground underline-offset-4 transition-colors hover:underline',
-                    style.groupHoverText
-                  )}
-                >
-                  <span className="mr-2 font-mono text-xs opacity-60">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  {s.heading}
-                </a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-
-        {/* Body */}
+        {/* Section ids are kept so a clause can be linked to directly,
+            e.g. /privacy#rights. */}
         <div className="space-y-10">
           {sections.map((s, i) => (
             <section key={s.id} id={s.id} className="scroll-mt-24">
@@ -226,14 +191,6 @@ export const Privacy = () => (
     highlight="Policy"
     icon={ShieldCheck}
     hue="teal"
-    summary={
-      <>
-        We collect what is needed to run a marketplace: your account details, what you buy
-        and sell, and where orders are delivered. We do not sell your personal information,
-        we do not run advertising trackers, and we do not currently process card payments at
-        all. You can ask for a copy of your data, correct it, or have your account deleted.
-      </>
-    }
     sections={[
       {
         id: 'scope',
@@ -616,14 +573,6 @@ export const Terms = () => (
     highlight="Service"
     icon={Scale}
     hue="indigo"
-    summary={
-      <>
-        VMK Store is a marketplace: we provide the venue, but when you buy something the
-        contract is between you and the seller. Keep your account secure, list honestly, do
-        not sell prohibited items, and treat other people decently. We can suspend accounts
-        that break these rules.
-      </>
-    }
     sections={[
       {
         id: 'agreement',
@@ -1043,14 +992,6 @@ export const Cookies = () => (
     highlight="Policy"
     icon={Cookie}
     hue="amber"
-    summary={
-      <>
-        VMK Store sets <strong>no cookies at all</strong>. The site keeps two small items in
-        your browser&rsquo;s local storage: your sign-in session, without which you would be
-        signed out on every click, and a record of the choice you made about optional storage.
-        There are no analytics, no advertising and no cross-site tracking.
-      </>
-    }
     sections={[
       {
         id: 'what',
