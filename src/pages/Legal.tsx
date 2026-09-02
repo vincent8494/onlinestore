@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import PageShell from '@/components/layout/PageShell';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
-import { FileText, Mail, ShieldCheck, Cookie, Scale, AlertTriangle } from 'lucide-react';
+import { FileText, Mail, ShieldCheck, Cookie, Scale } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HUE_STYLES, type Hue } from '@/lib/theme';
 import { useConsent } from '@/hooks/useConsent';
@@ -22,8 +22,9 @@ import { resetConsent, getConsentDate } from '@/lib/cookieConsent';
  *
  * Second, they are jurisdiction-neutral: they grant the rights that are common
  * to modern data protection law without claiming to be issued under a
- * particular statute. The governing-law clause is left as a marked placeholder
- * for a lawyer to complete once the operating entity is settled.
+ * particular statute. The governing-law clause points at wherever VMK Store is
+ * established rather than naming a country, because that is not yet settled —
+ * name it here once it is, and have a lawyer read the whole document.
  * ------------------------------------------------------------------------- */
 
 /** Reviewed and published on this date. Update when the text changes. */
@@ -50,13 +51,6 @@ const LI = ({ children }: { children: React.ReactNode }) => (
 
 const H3 = ({ children }: { children: React.ReactNode }) => (
   <h3 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide first:mt-0">{children}</h3>
-);
-
-/** A gap a lawyer must fill before this clause means anything. */
-const Placeholder = ({ children }: { children: React.ReactNode }) => (
-  <mark className="rounded bg-sale/15 px-1.5 py-0.5 font-bold uppercase tracking-wide text-sale">
-    {children}
-  </mark>
 );
 
 /** Definition table used for the storage inventory. */
@@ -846,9 +840,9 @@ export const Terms = () => (
               buyer.
             </P>
             <P>
-              Where we are liable, our total liability arising in any twelve-month period is
-              limited to the greater of the fees you paid us in that period and{' '}
-              <Placeholder>[cap amount and currency]</Placeholder>.
+              Where we are liable, our total liability for all claims arising in any
+              twelve-month period is limited to the total fees you paid us during that
+              period.
             </P>
             <P>
               You agree to cover us against claims brought by others that arise from your
@@ -912,24 +906,26 @@ export const Terms = () => (
       },
       {
         id: 'law',
-        heading: 'Governing law',
+        heading: 'Governing law and disputes',
         body: (
           <>
-            <div className="mb-4 flex gap-3 rounded-lg border-2 border-sale/40 bg-sale/10 p-4">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-sale" />
-              <p className="text-[0.9375rem] leading-7">
-                <strong>To be completed.</strong> The governing law and the courts that hear
-                disputes depend on where VMK Store is established, which is a decision for the
-                operator and their lawyer. Until this clause is completed, the rest of these
-                terms still applies, but the forum for a dispute is unsettled.
-              </p>
-            </div>
             <P>
-              These terms are governed by the laws of <Placeholder>[jurisdiction]</Placeholder>,
-              and the courts of <Placeholder>[jurisdiction]</Placeholder> have exclusive
-              jurisdiction over any dispute. If you are a consumer, this does not deprive you of
-              the protection of the mandatory laws of the country where you live, or of your
-              right to bring proceedings there.
+              These terms, and any dispute arising out of them or out of your use of the
+              marketplace, are governed by the law of the country in which VMK Store is
+              established, and the courts of that country have jurisdiction over them.
+            </P>
+            <P>
+              If you are a consumer, this does not deprive you of the protection of the
+              mandatory laws of the country where you live, and it does not remove your right
+              to bring proceedings in your local courts.
+            </P>
+            <P>
+              If you need to know which country that is before relying on this clause, ask us
+              at{' '}
+              <a className="font-semibold text-gold-ink underline underline-offset-2" href={`mailto:${CONTACT}`}>
+                {CONTACT}
+              </a>{' '}
+              and we will tell you.
             </P>
           </>
         ),
